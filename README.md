@@ -13,7 +13,9 @@ Site d'entraînement au trading, en simulation avec de l'argent fictif.
 
 ## Utilisation
 
-Ouvre `index.html` dans un navigateur. Aucune installation n'est nécessaire.
+Site en ligne : https://charlessteinmetz2021-cmd.github.io/trading/
+
+Pour l'utiliser sans connexion au site, télécharge `atelier-trading-autonome.html` (tout est dans un seul fichier) et ouvre-le dans un navigateur. `index.html` seul ne marche pas en double-cliquant dessus, car il charge `app.js`.
 
 Prix en direct : Bitcoin et or (jeton PAXG) via le flux public de Binance. Le prix du Nasdaq se saisit à la main.
 
