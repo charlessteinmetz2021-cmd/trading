@@ -44,7 +44,7 @@ function makeChart() {
     autoSize: true,
     layout: { background: { color: css("--panel") }, textColor: css("--muted"), fontFamily: "IBM Plex Mono, monospace" },
     grid: { vertLines: { color: css("--line") }, horzLines: { color: css("--line") } },
-    timeScale: { timeVisible: true, secondsVisible: false, borderColor: css("--line") },
+    timeScale: { timeVisible: true, secondsVisible: false, borderColor: css("--line"), rightOffset: 20 },
     rightPriceScale: { borderColor: css("--line") },
     crosshair: { mode: 0 },
     localization: { locale: "fr-FR" },
@@ -52,8 +52,9 @@ function makeChart() {
   candles = chart.addSeries(LC.CandlestickSeries, {
     upColor: "#1f9d5a", downColor: "#d0453a", borderVisible: false, wickUpColor: "#1f9d5a", wickDownColor: "#d0453a",
   });
-  chart.subscribeClick(onChartClick);
+  setupClicks();
   setupDrag();
+  candles.attachPrimitive(zones);
 }
 function setPrecision() {
   const d = MARKETS[cur].dec;
@@ -208,6 +209,36 @@ function indicatorSnapshot() {
   ].join("\n");
 }
 
+
+// ---------- zones colorées des trades (vert vers le TP, rouge vers le SL) ----------
+const zones = {
+  _p: null,
+  attached(p) { this._p = p; }, detached() { this._p = null; },
+  update() { this._p?.requestUpdate(); },
+  paneViews() {
+    return [{ zOrder: () => "bottom", renderer: () => ({ draw: target => {
+      if (!MARKETS[cur].feed || !candleData.length) return;
+      target.useBitmapCoordinateSpace(sc => {
+        const ctx = sc.context, W = sc.bitmapSize.width, hr = sc.horizontalPixelRatio, vr = sc.verticalPixelRatio;
+        const ts = chart.timeScale(), step = STEP[tf];
+        for (const p of S.positions.filter(p => p.sym === cur)) {
+          const bt = Math.floor(p.t / 1000) + TZ; const bar = bt - (bt % step);
+          let x0 = ts.timeToCoordinate(bar);
+          if (x0 == null) { const c = candleData.find(k => k.time >= bar) || candleData[candleData.length - 1]; x0 = bar < candleData[0].time ? 0 : ts.timeToCoordinate(c.time); }
+          if (x0 == null) x0 = 0;
+          const ye = candles.priceToCoordinate(p.entry); if (ye == null) continue;
+          const v = pnl(p, price[cur]);
+          const rect = (y2, color) => { if (y2 == null) return; ctx.fillStyle = color; ctx.fillRect(x0 * hr, Math.min(ye, y2) * vr, W - x0 * hr, Math.abs(y2 - ye) * vr); };
+          if (p.tp) rect(candles.priceToCoordinate(p.tp), "rgba(31,157,90,0.16)");
+          if (p.sl) rect(candles.priceToCoordinate(p.sl), "rgba(208,69,58,0.16)");
+          const yc = candles.priceToCoordinate(price[cur] ?? p.entry);
+          rect(yc, v >= 0 ? "rgba(31,157,90,0.28)" : "rgba(208,69,58,0.28)");
+        }
+      });
+    } }) }];
+  },
+};
+
 // ---------- dessins ----------
 function addLine(priceVal, color, title, style = 0, width = 1) {
   return candles.createPriceLine({ price: priceVal, color, lineWidth: width, lineStyle: style, axisLabelVisible: true, title });
@@ -241,10 +272,29 @@ function setTool(t) {
   const hints = { h: "Clique sur le graphique pour placer la ligne", t: "Clique sur la première bougie", fib: "Clique sur le point de départ (plus bas ou plus haut)" };
   $("hint").hidden = !hints[t]; $("hint").textContent = hints[t] || "";
 }
-function onChartClick(param) {
-  if (tool === "none" || !param.point) return;
-  const p = candles.coordinateToPrice(param.point.y);
-  const time = param.time ?? (candleData.length ? candleData[candleData.length - 1].time : null);
+// clics gérés directement (le graphique confond deux clics rapides avec un double-clic)
+function setupClicks() {
+  const box = $("chart"); let down = null;
+  box.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY }; });
+  box.addEventListener("pointerup", e => {
+    if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) { down = null; return; }
+    down = null;
+    const r = box.getBoundingClientRect();
+    onChartClick(e.clientX - r.left, e.clientY - r.top);
+  });
+}
+function xToTime(x) {
+  const ts = chart.timeScale(), t = ts.coordinateToTime(x);
+  if (t != null) return t;
+  const lg = ts.coordinateToLogical(x); if (lg == null || !candleData.length) return null;
+  const lastI = candleData.length - 1, step = STEP[tf];
+  return lg > lastI ? candleData[lastI].time + Math.round(lg - lastI) * step : candleData[0].time;
+}
+function onChartClick(x, y) {
+  if (tool === "none") return;
+  if (!candleData.length) { $("hint").textContent = "Les bougies ne sont pas chargées : impossible de dessiner pour l'instant."; return; }
+  const p = candles.coordinateToPrice(y);
+  const time = xToTime(x);
   if (p == null || time == null) return;
   const pt = { time, price: +p.toFixed(MARKETS[cur].dec) };
   if (tool === "h") { drawings().mine.push({ type: "h", price: pt.price }); finishDraw(); return; }
@@ -256,6 +306,7 @@ function finishDraw() { saveD(); renderDrawings(); setTool("none"); }
 
 // ---------- lignes des positions (entrée, SL, TP) ----------
 function renderPosLines() {
+  zones.update();
   posLines.forEach(l => candles.removePriceLine(l.line)); posLines = [];
   if (!MARKETS[cur].feed) return;
   const px = price[cur];
@@ -270,6 +321,7 @@ function renderPosLines() {
   }
 }
 function updatePosTitles() {
+  zones.update();
   const px = price[cur];
   for (const l of posLines) if (l.kind === "entry") {
     const p = S.positions.find(x => x.id === l.id); if (!p) continue;
@@ -457,6 +509,8 @@ function place(dir) {
   if (need > freeMargin()) return say(`Marge insuffisante : il faut ${usd(need)}, tu as ${usd(freeMargin())} de libre. Baisse la quantité ou monte le levier.`);
   if (orderType === "limit") { S.orders.push({ id: S.nextId++, sym: cur, dir, qty, limit: entry, lev, sl, tp }); save(); renderAll(); renderPosLines(); say("Ordre limite enregistré, il s'exécutera quand le prix l'atteindra."); }
   else { openPos(cur, dir, qty, px, lev, sl, tp); say(`${dir === 1 ? "Achat" : "Vente"} de ${qty} ${m.name} à ${fmt(px, m.dec)} exécuté.`); }
+  if (tvMode && m.feed) { tvMode = false; drawTv(); chart.timeScale().scrollToRealTime(); renderIndicators(); renderPosLines(); say($("msg").textContent + " Ton trade s'affiche sur le graphique « mes trades » : TradingView ne permet pas d'y ajouter nos positions."); }
+  if ($("autoReview").checked) reviewTrade({ dir, qty, entry, sl, tp, kind: orderType });
 }
 
 // calcul en direct dans le ticket
@@ -496,6 +550,8 @@ function renderAll() {
 
   // petit encart sur le graphique
   const mine = S.positions.filter(p => p.sym === cur);
+  const box = document.querySelector(".chartbox"), mp = mine.reduce((a, p) => a + pnl(p, price[p.sym]), 0);
+  box.classList.toggle("intrade", mine.length > 0); box.classList.toggle("winning", mine.length > 0 && mp >= 0); box.classList.toggle("losing", mine.length > 0 && mp < 0);
   $("hud").innerHTML = `<div>Marge libre ${usd(freeMargin())} · P&amp;L <b class="${signCls(up)}">${sgn(up)}${usd(up)}</b></div>` +
     mine.map(p => { const v = pnl(p, price[p.sym]); return `<div>${p.dir === 1 ? "Achat" : "Vente"} ${p.qty} @ ${fmt(p.entry, MARKETS[p.sym].dec)} <b class="${signCls(v)}">${sgn(v)}${usd(v)}</b><button data-close="${p.id}">Sortir</button></div>`; }).join("");
 
@@ -578,6 +634,42 @@ const SCHEMA = {
         rationale: { type: "string", description: "Pourquoi, et ce qui invaliderait l'idée" } } },
   },
 };
+
+// Avis instantané de Claude sur chaque trade pris (effort bas pour répondre en quelques secondes)
+async function claudeClient() {
+  const key = getKey(); if (!key) return null;
+  const { default: Anthropic } = await import("./vendor/anthropic-sdk.js");
+  return new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
+}
+const REVIEW_SCHEMA = { type: "object", additionalProperties: false, required: ["verdict", "comment"],
+  properties: { verdict: { type: "string", enum: ["bon", "moyen", "risqué"] }, comment: { type: "string", description: "2 à 3 phrases : ce qui va, ce qui ne va pas, quoi ajuster (stop, objectif, taille)" } } };
+async function reviewTrade(t) {
+  const out = $("toast");
+  const client = await claudeClient().catch(() => null);
+  if (!client) { out.hidden = false; out.innerHTML = 'Claude peut commenter chaque trade : ajoute ta clé API dans « Analyse de Claude ».'; setTimeout(() => out.hidden = true, 6000); return; }
+  if (!candleData.length) return;
+  out.hidden = false; out.className = "toast"; out.textContent = "Claude vérifie ton trade…";
+  const d = MARKETS[cur].dec, bars = candleData.slice(-60).map(b => `${b.open.toFixed(d)},${b.high.toFixed(d)},${b.low.toFixed(d)},${b.close.toFixed(d)}`).join("\n");
+  const risk = t.sl ? Math.abs(t.entry - t.sl) * t.qty : null, gain = t.tp ? Math.abs(t.tp - t.entry) * t.qty : null;
+  try {
+    const resp = await client.beta.messages.create({
+      model: "claude-opus-5-5", max_tokens: 4000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
+      output_config: { effort: "low", format: { type: "json_schema", schema: REVIEW_SCHEMA } },
+      system: "Tu es le coach d'une personne qui s'entraîne au trading avec de l'argent fictif. Juge le trade qu'elle vient de prendre, en français simple et bref.",
+      messages: [{ role: "user", content: `Trade : ${t.dir === 1 ? "achat" : "vente"} ${t.qty} ${MARKETS[cur].name} (${t.kind === "limit" ? "ordre limite" : "au marché"}) à ${t.entry}, stop ${t.sl ?? "aucun"}, objectif ${t.tp ?? "aucun"}. Unité de temps ${TF.find(x => x[0] === tf)[1]}. Compte ${usd(equity())}. Risque ${risk ? usd(risk) + " (" + fmt(risk / equity() * 100, 2) + " %)" : "illimité, pas de stop"}, gain visé ${gain ? usd(gain) : "non défini"}.
+Indicateurs :
+${indicatorSnapshot()}
+60 dernières bougies (ouverture,haut,bas,clôture) :
+${bars}` }],
+    });
+    const text = resp.content.find(b => b.type === "text")?.text; if (!text) throw new Error("réponse vide");
+    const r = JSON.parse(text);
+    out.className = "toast " + (r.verdict === "bon" ? "good" : r.verdict === "risqué" ? "bad" : "mid");
+    out.innerHTML = `<b>Claude : trade ${r.verdict}.</b> ${r.comment.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c])} <button id="toastClose">OK</button>`;
+    $("toastClose").onclick = () => out.hidden = true;
+  } catch (e) { out.className = "toast"; out.textContent = "Claude n'a pas pu vérifier ce trade : " + (e?.status === 401 ? "clé API refusée." : e?.message || e); setTimeout(() => out.hidden = true, 8000); }
+}
+
 async function analyze() {
   const msg = $("claudeMsg");
   const key = getKey();
