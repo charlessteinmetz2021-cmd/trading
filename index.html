@@ -3,39 +3,57 @@
 <title>Atelier de trading</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600&display=swap">
 <style>
-/* Layout : graphique principal + ticket d'ordre à droite, positions et historique dessous, calculateur en bas */
+/* Layout : graphique + ticket d'ordre à droite ; Claude, positions, stats et calculateur dessous */
 :root{
   --bg:#f3f5f4; --panel:#ffffff; --fg:#17201d; --muted:#5d6b66; --line:#d6dedb;
-  --accent:#0f6b5a; --gain:#137a43; --loss:#b3352b; --warn:#a86a00;
+  --accent:#0f6b5a; --gain:#137a43; --loss:#b3352b; --warn:#a86a00; --claude:#7a4cc2; --entry:#2563c9;
   --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0f1513; --panel:#17201d; --fg:#e4ece9; --muted:#93a39d; --line:#2a3632;
-  --accent:#4cc3a6; --gain:#4fcf86; --loss:#f07a6e; --warn:#e0a944; color-scheme:dark}}
+  --accent:#4cc3a6; --gain:#4fcf86; --loss:#f07a6e; --warn:#e0a944; --claude:#b48cf0; --entry:#6aa2ff; color-scheme:dark}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.5}
-.wrap{max-width:1400px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:18px}
+.wrap{max-width:1440px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:18px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px}
 header h1{font-family:var(--display);font-size:1.8rem;margin:0}
 .badge{font-size:.78rem;font-weight:600;color:var(--warn);border:1px solid currentColor;border-radius:99px;padding:2px 10px}
 .account{display:flex;flex-wrap:wrap;gap:20px;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .account div{display:grid}
-.account small{font-family:var(--body);color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
-.account b{font-size:1.1rem}
+.account small{font-family:var(--body);color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+.account b{font-size:1.05rem}
 section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0;align-content:start}
 h2{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:600}
 .main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px}
-@media (max-width:980px){.main{grid-template-columns:1fr}}
-.symbols{display:flex;gap:6px;flex-wrap:wrap}
-.symbols button{font:inherit;display:grid;text-align:left;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer;min-width:140px}
-.symbols button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.symbols span{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--muted)}
-.tv{height:620px;border-radius:8px;overflow:hidden}
-@media (max-width:600px){.tv{height:460px}}
+@media (max-width:1000px){.main{grid-template-columns:1fr}}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.bar .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.chip{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+.sym{display:grid;text-align:left;min-width:130px;padding:6px 12px}
+.sym span{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.8rem;opacity:.8}
+.chartwrap{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px}
+@media (max-width:700px){.chartwrap{grid-template-columns:1fr}}
+.indpanel{display:grid;gap:8px;align-content:start;font-size:.84rem;max-height:600px;overflow:auto}
+.indpanel h3{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px;font-weight:600}
+.indpanel label{display:flex;gap:8px;align-items:center;color:var(--fg);font-size:.84rem;cursor:pointer}
+.indpanel input{width:auto;accent-color:var(--accent)}
+.indpanel i{display:inline-block;width:10px;height:10px;border-radius:2px;flex:none}
+.signals{width:auto}
+.chartbox{position:relative;height:600px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+@media (max-width:600px){.chartbox{height:440px}}
+#chart,#tv{position:absolute;inset:0}
+.hud{position:absolute;top:8px;left:8px;z-index:5;display:grid;gap:4px;pointer-events:none;font-family:var(--mono);font-size:.74rem;font-variant-numeric:tabular-nums}
+.hud > div{background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:6px;padding:3px 8px;pointer-events:auto;display:flex;gap:8px;align-items:center}
+.hud button{font:inherit;font-size:.72rem;padding:1px 6px;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:5;background:var(--fg);color:var(--panel);font-size:.8rem;padding:4px 12px;border-radius:99px}
+.quick{position:absolute;top:8px;right:70px;z-index:5;display:flex;gap:4px}
+.quick button{font:inherit;font-weight:600;font-size:.8rem;padding:5px 12px;border:0;border-radius:6px;color:#fff;cursor:pointer}
 label{display:grid;gap:3px;font-size:.8rem;color:var(--muted)}
-input,select{font:inherit;font-family:var(--mono);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
-input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input,select,textarea{font:inherit;font-family:var(--mono);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+textarea{font-family:var(--body);resize:vertical;min-height:60px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .seg{display:flex;gap:6px}
 .seg button{flex:1;font:inherit;font-weight:600;padding:7px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer}
@@ -55,7 +73,7 @@ td button{font:inherit;font-size:.78rem;padding:3px 8px;border-radius:5px;border
 .gain{color:var(--gain)} .loss{color:var(--loss)}
 td.empty{color:var(--muted);text-align:left;font-family:var(--body);white-space:normal}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
-@media (max-width:980px){.two{grid-template-columns:1fr}}
+@media (max-width:1000px){.two{grid-template-columns:1fr}}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .stats div{display:grid;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .stats small{font-family:var(--body);color:var(--muted);font-size:.74rem}
@@ -64,6 +82,15 @@ td.empty{color:var(--muted);text-align:left;font-family:var(--body);white-space:
 .pricefeed{font-size:.78rem;color:var(--muted)}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:5px}
 .dot.on{background:var(--gain)}
+.claude h2{color:var(--claude)}
+.claude .btn{font:inherit;font-weight:600;padding:10px 14px;border:0;border-radius:8px;background:var(--claude);color:#fff;cursor:pointer;justify-self:start}
+.claude .btn:disabled{opacity:.6;cursor:wait}
+.answer{display:grid;gap:8px;border-left:3px solid var(--claude);padding-left:12px}
+.answer p{margin:0;max-width:75ch}
+.idea{font-family:var(--mono);font-size:.85rem;display:flex;flex-wrap:wrap;gap:6px 16px}
+details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
 </style>
 </head><body>
 <div class="wrap">
@@ -73,16 +100,51 @@ td.empty{color:var(--muted);text-align:left;font-family:var(--body);white-space:
       <div><small>Solde</small><b id="aBal">–</b></div>
       <div><small>Valeur du compte</small><b id="aEq">–</b></div>
       <div><small>P&amp;L latent</small><b id="aPnl">–</b></div>
-      <div><small>Marge utilisée</small><b id="aMargin">–</b></div>
+      <div><small>Marge libre</small><b id="aFree">–</b></div>
     </div>
   </header>
 
   <div class="main">
     <section aria-labelledby="tChart">
-      <h2 id="tChart">Graphique</h2>
-      <div class="symbols" role="group" aria-label="Marché" id="symbols"></div>
-      <div class="tv" id="tv"></div>
-      <p class="small">Les outils de dessin sont dans la barre à gauche du graphique : lignes de tendance, lignes horizontales, Fibonacci, rectangles, texte, règle de mesure. Les indicateurs (RSI, moyennes mobiles, MACD, Bollinger…) s'ajoutent avec le bouton « Indicateurs » en haut du graphique.</p>
+      <div class="bar" role="group" aria-label="Marché" id="symbols"></div>
+      <div class="bar" id="tools">
+        <span id="tfBar" class="bar" role="group" aria-label="Unité de temps"></span>
+        <span class="sep"></span>
+        <span class="bar" role="group" aria-label="Outils de dessin" id="drawBar">
+          <button class="chip" data-tool="none" aria-pressed="true" title="Naviguer dans le graphique">Curseur</button>
+          <button class="chip" data-tool="h" aria-pressed="false" title="Clique une fois sur le graphique">Ligne horizontale</button>
+          <button class="chip" data-tool="t" aria-pressed="false" title="Clique sur deux bougies">Tendance</button>
+          <button class="chip" data-tool="fib" aria-pressed="false" title="Clique sur un plus bas puis un plus haut">Fibonacci</button>
+        </span>
+        <button class="chip" id="undo">Annuler le dernier trait</button>
+        <button class="chip" id="clearDraw">Effacer mes traits</button>
+        <span class="sep"></span>
+        <button class="chip" id="viewTv" aria-pressed="false" title="Le graphique TradingView a tous ses outils mais Claude ne peut pas y dessiner">Vue TradingView</button>
+      </div>
+      <h2 id="tChart" hidden>Graphique</h2>
+      <div class="chartwrap">
+      <div class="chartbox">
+        <div id="chart"></div>
+        <div id="tv" hidden></div>
+        <div class="hud" id="hud"></div>
+        <div class="quick" id="quick"><button class="buy" id="qBuy">Acheter</button><button class="sell" id="qSell">Vendre</button></div>
+        <div class="hint" id="hint" hidden></div>
+      </div>
+      <aside class="indpanel" aria-labelledby="tInd">
+        <h2 id="tInd">Indicateurs</h2>
+        <div id="indList"></div>
+        <p class="small">Les indicateurs du bas s'affichent sous le graphique. Claude les calcule tous à chaque analyse, même ceux qui sont masqués.</p>
+      </aside>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--entry)"></i>Entrée</span>
+        <span><i style="background:var(--loss)"></i>Stop loss</span>
+        <span><i style="background:var(--gain)"></i>Take profit</span>
+        <span><i style="background:var(--muted)"></i>Ordre limite</span>
+        <span><i style="background:var(--warn)"></i>Tes traits</span>
+        <span><i style="background:var(--claude)"></i>Tracés de Claude</span>
+      </div>
+      <p class="small">Tu peux faire glisser les lignes SL et TP d'une position directement sur le graphique pour les déplacer.</p>
     </section>
 
     <section aria-labelledby="tOrder">
@@ -104,8 +166,33 @@ td.empty{color:var(--muted);text-align:left;font-family:var(--body);white-space:
       <button class="link" id="sizeBtn">Calculer la quantité pour risquer 1 % du compte</button>
       <div class="go"><button class="buy" id="buy">Acheter</button><button class="sell" id="sell">Vendre</button></div>
       <p class="msg" id="msg" role="status"></p>
+      <div class="row"><span>Risque si SL</span><span class="loss" id="tRisk">–</span></div>
+      <div class="row"><span>Gain si TP</span><span class="gain" id="tGain">–</span></div>
+      <div class="row"><span>Ratio R/R</span><span id="tRR">–</span></div>
+      <div class="row"><span>Marge pour cet ordre</span><span id="tNeed">–</span></div>
+      <div class="row"><span>Marge utilisée</span><span id="aMargin">–</span></div>
     </section>
   </div>
+
+  <section class="claude" aria-labelledby="tClaude">
+    <h2 id="tClaude">Analyse de Claude</h2>
+    <p class="small">Claude lit les 200 dernières bougies du graphique affiché, la valeur de chaque indicateur (Ichimoku, RSI, MACD, Bollinger…), tes traits et tes positions, puis trace ses niveaux en violet. Il propose une idée de trade, mais c'est toi qui décides de la passer.</p>
+    <label>Ta question (facultatif)<textarea id="question" placeholder="Ex. : est-ce que la cassure de 68 000 tient ? Où placer mon stop ?"></textarea></label>
+    <div class="bar">
+      <button class="btn" id="analyze">Analyser le graphique</button>
+      <button class="link" id="clearClaude">Effacer les tracés de Claude</button>
+    </div>
+    <p class="msg" id="claudeMsg" role="status"></p>
+    <div class="answer" id="answer" hidden></div>
+    <details id="keyBox">
+      <summary>Réglage : clé API Claude</summary>
+      <div style="display:grid;gap:8px;margin-top:8px;max-width:520px">
+        <p class="small">Crée une clé sur <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">platform.claude.com</a> et fixe une limite de dépense mensuelle. La clé reste enregistrée uniquement dans ce navigateur. Chaque analyse coûte quelques centimes.</p>
+        <label>Clé API<input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off"></label>
+        <div class="bar"><button class="chip" id="saveKey">Enregistrer</button><button class="link" id="delKey">Supprimer la clé</button></div>
+      </div>
+    </details>
+  </section>
 
   <section aria-labelledby="tPos">
     <h2 id="tPos">Positions ouvertes</h2>
@@ -146,167 +233,7 @@ td.empty{color:var(--muted);text-align:left;font-family:var(--body);white-space:
   </div>
 </div>
 
+<script src="vendor/lightweight-charts.standalone.production.js"></script>
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script>
-const $=id=>document.getElementById(id);
-const MARKETS={
-  BTC:{name:"Bitcoin",tv:"BITSTAMP:BTCUSD",feed:"BTCUSDT",dec:2,step:0.001},
-  XAU:{name:"Or",tv:"OANDA:XAUUSD",feed:"PAXGUSDT",dec:2,step:0.01},
-  NAS:{name:"Nasdaq 100",tv:"OANDA:NAS100USD",feed:null,dec:1,step:0.1}
-};
-const usd=v=>(v<0?"−":"")+Math.abs(v).toLocaleString('fr-FR',{style:'currency',currency:'USD',maximumFractionDigits:2});
-const fmt=(v,d=2)=>v==null||isNaN(v)?'–':(+v).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
-const signCls=v=>v>0?'gain':v<0?'loss':'';
-const price={BTC:null,XAU:null,NAS:null};
-let cur="BTC",orderType="market";
-
-// ---------- état sauvegardé dans le navigateur ----------
-const KEY="atelier-trading-v1";
-let S=null;
-function fresh(cap){return{start:cap,balance:cap,positions:[],orders:[],history:[],nasPrice:null,nextId:1}}
-try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-if(!S||!Array.isArray(S.positions))S=fresh(10000);
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-price.NAS=S.nasPrice;
-
-// ---------- graphique ----------
-const dark=matchMedia('(prefers-color-scheme: dark)').matches;
-function drawChart(){
-  if(!window.TradingView){$('tv').textContent="Graphique indisponible : vérifie ta connexion internet puis recharge la page.";return}
-  $('tv').innerHTML='';
-  new TradingView.widget({container_id:"tv",symbol:MARKETS[cur].tv,interval:"15",autosize:true,timezone:"Europe/Paris",
-    theme:dark?"dark":"light",style:"1",locale:"fr",hide_side_toolbar:false,allow_symbol_change:false,
-    withdateranges:true,details:true,save_image:true,studies:["RSI@tv-basicstudies"]});
-}
-function renderSymbols(){
-  $('symbols').innerHTML=Object.entries(MARKETS).map(([k,m])=>`<button data-k="${k}" aria-pressed="${k===cur}"><b>${m.name}</b><span id="px_${k}">${fmt(price[k],m.dec)}</span></button>`).join('');
-  $('symbols').querySelectorAll('button').forEach(b=>b.onclick=()=>{cur=b.dataset.k;renderSymbols();drawChart();renderTicket()});
-}
-
-// ---------- flux de prix (Binance, public et gratuit) ----------
-let wsOk=false;
-function connect(){
-  let ws;
-  try{ws=new WebSocket("wss://stream.binance.com:9443/stream?streams=btcusdt@miniTicker/paxgusdt@miniTicker")}catch(e){return poll()}
-  ws.onopen=()=>{wsOk=true;renderTicket()};
-  ws.onmessage=ev=>{try{const d=JSON.parse(ev.data).data;onPrice(d.s==="BTCUSDT"?"BTC":"XAU",+d.c)}catch(e){}};
-  ws.onclose=()=>{wsOk=false;renderTicket();setTimeout(connect,5000)};
-}
-let lastRender=0;
-function onPrice(k,p){
-  price[k]=p;check(k);
-  const now=Date.now();if(now-lastRender>500){lastRender=now;renderAll()}
-}
-
-// ---------- moteur de simulation ----------
-function pnl(p,px){return px==null?0:(px-p.entry)*p.qty*p.dir}
-function margin(p){return p.entry*p.qty/p.lev}
-function equity(){return S.balance+S.positions.reduce((a,p)=>a+pnl(p,price[p.sym]),0)}
-function freeMargin(){return equity()-S.positions.reduce((a,p)=>a+margin(p),0)}
-function check(k){
-  const px=price[k];if(px==null)return;
-  for(const o of S.orders.filter(o=>o.sym===k)){
-    if((o.dir===1&&px<=o.limit)||(o.dir===-1&&px>=o.limit)){S.orders=S.orders.filter(x=>x!==o);open(k,o.dir,o.qty,o.limit,o.lev,o.sl,o.tp)}
-  }
-  for(const p of S.positions.filter(p=>p.sym===k)){
-    if(p.sl&&((p.dir===1&&px<=p.sl)||(p.dir===-1&&px>=p.sl)))close(p,p.sl,"Stop loss");
-    else if(p.tp&&((p.dir===1&&px>=p.tp)||(p.dir===-1&&px<=p.tp)))close(p,p.tp,"Take profit");
-  }
-  // liquidation si le compte n'a plus de quoi couvrir les pertes
-  if(S.positions.length&&equity()<=0){for(const p of [...S.positions])close(p,price[p.sym]??p.entry,"Liquidation")}
-}
-function open(sym,dir,qty,entry,lev,sl,tp){
-  S.positions.push({id:S.nextId++,sym,dir,qty,entry,lev,sl,tp,t:Date.now()});save();renderAll();
-}
-function close(p,px,reason){
-  const v=pnl(p,px);S.balance+=v;S.positions=S.positions.filter(x=>x.id!==p.id);
-  S.history.unshift({sym:p.sym,dir:p.dir,qty:p.qty,entry:p.entry,exit:px,reason,pnl:v,t:Date.now()});save();renderAll();
-}
-function place(dir){
-  const m=MARKETS[cur],px=price[cur],qty=+$('qty').value,lev=+$('lev').value;
-  const sl=+$('sl').value||null,tp=+$('tp').value||null;
-  const say=t=>{$('msg').textContent=t};
-  if(px==null)return say(cur==="NAS"?"Entre d'abord le prix actuel du Nasdaq.":"Le prix n'est pas encore arrivé, patiente quelques secondes.");
-  if(!(qty>0))return say("Indique une quantité supérieure à 0.");
-  const entry=orderType==="limit"?+$('limitPx').value:px;
-  if(!(entry>0))return say("Indique un prix limite.");
-  if(orderType==="limit"&&((dir===1&&entry>=px)||(dir===-1&&entry<=px)))return say(dir===1?"Un achat limite se place sous le prix actuel.":"Une vente limite se place au-dessus du prix actuel.");
-  if(sl&&((dir===1&&sl>=entry)||(dir===-1&&sl<=entry)))return say(dir===1?"Pour un achat, le stop doit être sous l'entrée.":"Pour une vente, le stop doit être au-dessus de l'entrée.");
-  if(tp&&((dir===1&&tp<=entry)||(dir===-1&&tp>=entry)))return say("L'objectif est du mauvais côté de l'entrée.");
-  const need=entry*qty/lev;
-  if(need>freeMargin())return say(`Marge insuffisante : il faut ${usd(need)}, tu as ${usd(freeMargin())} de disponible. Baisse la quantité ou monte le levier.`);
-  if(orderType==="limit"){S.orders.push({id:S.nextId++,sym:cur,dir,qty,limit:entry,lev,sl,tp});save();renderAll();say("Ordre limite enregistré, il s'exécutera quand le prix l'atteindra.")}
-  else{open(cur,dir,qty,px,lev,sl,tp);say(`${dir===1?"Achat":"Vente"} de ${qty} ${m.name} à ${fmt(px,m.dec)} exécuté.`)}
-}
-
-// ---------- affichage ----------
-function renderTicket(){
-  const m=MARKETS[cur];
-  $('oSym').textContent=m.name;$('oPrice').textContent=fmt(price[cur],m.dec);
-  $('qty').step=m.step;
-  const manual=!m.feed;$('manualWrap').hidden=!manual;
-  if(manual){$('feed').innerHTML='<span class="dot"></span>Pas de flux de prix gratuit pour le Nasdaq : saisis le prix lu sur le graphique. Les stops et ordres limite sont vérifiés à chaque saisie.';if(S.nasPrice&&!$('manual').value)$('manual').value=S.nasPrice}
-  else $('feed').innerHTML=`<span class="dot ${wsOk?'on':''}"></span>${wsOk?'Prix en direct':'Connexion au prix…'} (Binance${cur==="XAU"?", jeton PAXG adossé à l'or : il peut s'écarter de quelques dollars du graphique":""})`;
-}
-function renderAll(){
-  for(const k in MARKETS){const e=$('px_'+k);if(e)e.textContent=fmt(price[k],MARKETS[k].dec)}
-  $('oPrice').textContent=fmt(price[cur],MARKETS[cur].dec);
-  const eq=equity(),up=eq-S.balance;
-  $('aBal').textContent=usd(S.balance);$('aEq').textContent=usd(eq);
-  $('aPnl').textContent=usd(up);$('aPnl').className=signCls(up);
-  $('aMargin').textContent=usd(S.positions.reduce((a,p)=>a+margin(p),0));
-  const side=d=>d===1?'<span class="gain">Achat</span>':'<span class="loss">Vente</span>';
-  $('posBody').innerHTML=S.positions.length?S.positions.map(p=>{const m=MARKETS[p.sym],v=pnl(p,price[p.sym]);
-    return `<tr><td>${m.name}</td><td>${side(p.dir)}</td><td>${p.qty}</td><td>${fmt(p.entry,m.dec)}</td><td>${fmt(price[p.sym],m.dec)}</td><td>${p.sl?fmt(p.sl,m.dec):'–'}</td><td>${p.tp?fmt(p.tp,m.dec):'–'}</td><td class="${signCls(v)}">${usd(v)}</td><td><button data-close="${p.id}">Clôturer</button></td></tr>`}).join('')
-    :'<tr><td colspan="9" class="empty">Aucune position. Choisis un marché, puis clique sur Acheter ou Vendre.</td></tr>';
-  $('ordBody').innerHTML=S.orders.length?S.orders.map(o=>{const m=MARKETS[o.sym];
-    return `<tr><td>${m.name}</td><td>${side(o.dir)}</td><td>${o.qty}</td><td>${fmt(o.limit,m.dec)}</td><td>${o.sl?fmt(o.sl,m.dec):'–'}</td><td>${o.tp?fmt(o.tp,m.dec):'–'}</td><td><button data-cancel="${o.id}">Annuler</button></td></tr>`}).join('')
-    :'<tr><td colspan="7" class="empty">Aucun ordre en attente.</td></tr>';
-  $('posBody').querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{const p=S.positions.find(x=>x.id==b.dataset.close);if(p&&price[p.sym]!=null)close(p,price[p.sym],"Manuel")});
-  $('ordBody').querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{S.orders=S.orders.filter(x=>x.id!=b.dataset.cancel);save();renderAll()});
-  const H=S.history,wins=H.filter(h=>h.pnl>0),losses=H.filter(h=>h.pnl<=0);
-  const gw=wins.reduce((a,h)=>a+h.pnl,0),gl=-losses.reduce((a,h)=>a+h.pnl,0),tot=gw-gl;
-  $('stats').innerHTML=[
-    ["Trades clôturés",H.length],
-    ["Taux de réussite",H.length?fmt(wins.length/H.length*100,0)+' %':'–'],
-    ["Résultat total",`<span class="${signCls(tot)}">${usd(tot)}</span>`],
-    ["Performance",`<span class="${signCls(S.balance-S.start)}">${fmt((S.balance/S.start-1)*100,2)} %</span>`],
-    ["Gain moyen",wins.length?usd(gw/wins.length):'–'],
-    ["Perte moyenne",losses.length?usd(-gl/losses.length):'–'],
-    ["Profit factor",gl>0?fmt(gw/gl,2):'–']
-  ].map(([a,b])=>`<div><small>${a}</small><b>${b}</b></div>`).join('');
-  $('histBody').innerHTML=H.length?H.slice(0,50).map(h=>{const m=MARKETS[h.sym];
-    return `<tr><td>${m.name}</td><td>${side(h.dir)}</td><td>${fmt(h.entry,m.dec)}</td><td>${fmt(h.exit,m.dec)}</td><td>${h.reason}</td><td class="${signCls(h.pnl)}">${usd(h.pnl)}</td></tr>`}).join('')
-    :'<tr><td colspan="6" class="empty">L\'historique se remplit quand tu clôtures un trade.</td></tr>';
-}
-
-// ---------- calculateur ----------
-function calc(){
-  const r=+$('cRisk').value/100,e=+$('cEntry').value,s=+$('cStop').value,t=+$('cTp').value;
-  ['cQty','cLoss','cGain','cRR','cBE'].forEach(i=>$(i).textContent='–');
-  if(!(r>0&&e>0&&s>0&&e!==s))return null;
-  const dir=s<e?1:-1,dist=Math.abs(e-s),q=equity()*r/dist;
-  $('cQty').textContent=fmt(q,4)+(dir===1?' (achat)':' (vente)');$('cLoss').textContent=usd(-q*dist);
-  if(t>0&&(t-e)*dir>0){const g=q*Math.abs(t-e),rr=g/(q*dist);$('cGain').textContent=usd(g);$('cRR').textContent='1 : '+fmt(rr,2);$('cBE').textContent=fmt(100/(1+rr),1)+' %'}
-  return{q,s,t:t>0?t:null};
-}
-['cRisk','cEntry','cStop','cTp'].forEach(i=>$(i).addEventListener('input',calc));
-$('cUse').onclick=()=>{const c=calc();if(!c){$('msg').textContent="Remplis l'entrée et le stop dans le calculateur.";return}
-  $('qty').value=+c.q.toPrecision(4);$('sl').value=c.s;$('tp').value=c.t||'';$('msg').textContent="Quantité, stop et objectif reportés dans le ticket."};
-$('sizeBtn').onclick=()=>{const px=price[cur],sl=+$('sl').value;
-  if(px==null||!(sl>0)||sl===px){$('msg').textContent="Renseigne d'abord un stop loss : la quantité se calcule à partir de la distance entre le prix et le stop.";return}
-  $('qty').value=+(equity()*0.01/Math.abs(px-sl)).toPrecision(4);$('msg').textContent="Avec cette quantité, tu perds 1 % du compte si le stop est touché."};
-
-// ---------- contrôles ----------
-function setType(t){orderType=t;$('tMarket').setAttribute('aria-pressed',t==="market");$('tLimit').setAttribute('aria-pressed',t==="limit");$('limitWrap').hidden=t!=="limit"}
-$('tMarket').onclick=()=>setType("market");$('tLimit').onclick=()=>setType("limit");
-$('buy').onclick=()=>place(1);$('sell').onclick=()=>place(-1);
-$('manual').addEventListener('change',()=>{const v=+$('manual').value;if(v>0){S.nasPrice=v;save();onPrice("NAS",v);renderAll()}});
-$('resetBtn').onclick=()=>{$('resetConfirm').hidden=false};
-$('resetNo').onclick=()=>{$('resetConfirm').hidden=true};
-$('resetYes').onclick=()=>{S=fresh(+$('startCap').value||10000);price.NAS=null;$('manual').value='';save();$('resetConfirm').hidden=true;renderAll()};
-$('startCap').value=S.start;
-
-renderSymbols();drawChart();renderTicket();renderAll();connect();
-</script>
+<script type="module" src="app.js"></script>
 </body></html>
