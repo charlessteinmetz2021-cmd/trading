@@ -8,7 +8,7 @@ const MARKETS = {
   XAU: { name: "Or", tv: "OANDA:XAUUSD", feed: "PAXGUSDT", dec: 2, step: 0.01 },
   NAS: { name: "Nasdaq 100", tv: "OANDA:NAS100USD", feed: null, dec: 1, step: 0.1 },
 };
-const TF = [["1m", "1 min", "1"], ["5m", "5 min", "5"], ["15m", "15 min", "15"], ["1h", "1 h", "60"], ["4h", "4 h", "240"], ["1d", "Jour", "D"]];
+const TF = [["1s", "1 s", null], ["5s", "5 s", null], ["15s", "15 s", null], ["30s", "30 s", null], ["1m", "1 min", "1"], ["5m", "5 min", "5"], ["15m", "15 min", "15"], ["1h", "1 h", "60"], ["4h", "4 h", "240"], ["1d", "Jour", "D"]];
 const FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const TZ = -new Date().getTimezoneOffset() * 60; // affichage à l'heure locale
 
@@ -54,6 +54,7 @@ function makeChart() {
   });
   setupClicks();
   setupDrag();
+  candles.attachPrimitive(overlay);
   candles.attachPrimitive(zones);
 }
 function setPrecision() {
@@ -65,7 +66,34 @@ let klineWs = null;
 const CB = { BTCUSDT: "BTC-USD", PAXGUSDT: "PAXG-USD" };
 const CB_GRAN = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 21600, "1d": 86400 };
 // Historique : Binance (deux adresses), puis Coinbase si Binance est bloqué chez l'utilisateur
+const SEC = { "1s": 1, "5s": 5, "15s": 15, "30s": 30 };
+function aggregate(rows, n) {
+  const out = [];
+  for (const r of rows) {
+    const t = r.time - ((r.time - TZ) % n), last = out[out.length - 1];
+    if (last && last.time === t) { last.high = Math.max(last.high, r.high); last.low = Math.min(last.low, r.low); last.close = r.close; last.volume += r.volume; }
+    else out.push({ ...r, time: t });
+  }
+  return out;
+}
+async function fetchSeconds(feed, n) {
+  const pages = Math.min(8, Math.ceil((n * 300) / 1000));
+  for (const host of ["https://data-api.binance.vision", "https://api.binance.com"]) {
+    try {
+      let end = Date.now(), all = [];
+      for (let i = 0; i < pages; i++) {
+        const r = await fetch(`${host}/api/v3/klines?symbol=${feed}&interval=1s&limit=1000&endTime=${end}`);
+        if (!r.ok) break;
+        const rows = await r.json(); if (!rows.length) break;
+        all = rows.concat(all); end = rows[0][0] - 1;
+      }
+      if (all.length) return { src: "Binance", rows: aggregate(all.map(k => ({ time: Math.floor(k[0] / 1000) + TZ, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] })), n) };
+    } catch (e) {}
+  }
+  return { src: "Coinbase", rows: [] }; // Coinbase n'a pas de bougies en secondes : on les construit avec les prix en direct
+}
 async function fetchCandles(feed, frame) {
+  if (SEC[frame]) return fetchSeconds(feed, SEC[frame]);
   for (const host of ["https://data-api.binance.vision", "https://api.binance.com"]) {
     try {
       const r = await fetch(`${host}/api/v3/klines?symbol=${feed}&interval=${frame}&limit=500`);
@@ -93,6 +121,7 @@ async function loadCandles() {
   const sym = cur, frame = tf;
   const res = await fetchCandles(m.feed, tf);
   if (sym !== cur || frame !== tf) return;
+  if (res && !res.rows.length && SEC[tf]) { dataSrc = res.src; candleData = []; $("indStatus").textContent = "Bougies en secondes construites avec les prix en direct : elles apparaissent au fur et à mesure."; renderIndicators(); return; }
   if (!res) { dataSrc = null; $("indStatus").textContent = "Les prix ne se chargent pas sur ta connexion (Binance et Coinbase injoignables). Les indicateurs restent disponibles sur la vue TradingView."; renderIndicators(); return; }
   dataSrc = res.src; candleData = res.rows;
   $("indStatus").textContent = `Données : ${res.src}, ${candleData.length} bougies.`;
@@ -106,39 +135,49 @@ async function loadCandles() {
     candles.update(bar); refreshIndicatorsSoon();
   };
   if (res.src === "Binance") {
-    klineWs = new WebSocket(`wss://data-stream.binance.vision/ws/${m.feed.toLowerCase()}@kline_${tf}`);
-    klineWs.onmessage = ev => { const k = JSON.parse(ev.data).k; onBar({ time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v }); };
+    const sec = SEC[tf];
+    klineWs = new WebSocket(`wss://data-stream.binance.vision/ws/${m.feed.toLowerCase()}@kline_${sec ? "1s" : tf}`);
+    klineWs.onmessage = ev => {
+      const k = JSON.parse(ev.data).k;
+      const bar = { time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v };
+      if (!sec || sec === 1) return onBar(bar);
+      const t = bar.time - ((bar.time - TZ) % sec), last = candleData[candleData.length - 1];
+      if (last && last.time === t) onBar({ ...last, high: Math.max(last.high, bar.high), low: Math.min(last.low, bar.low), close: bar.close });
+      else onBar({ ...bar, time: t });
+    };
     klineWs.onclose = () => setTimeout(() => { if (sym === cur && frame === tf) loadCandles(); }, 5000);
   } else {
-    pollTimer = setInterval(async () => { const r2 = await fetchCandles(m.feed, frame); if (r2) onBar(r2.rows[r2.rows.length - 1]); }, 15000);
+    if (!SEC[tf]) pollTimer = setInterval(async () => { const r2 = await fetchCandles(m.feed, frame); if (r2 && r2.rows.length) onBar(r2.rows[r2.rows.length - 1]); }, 15000);
   }
 }
 let pollTimer = 0;
 
 // ---------- indicateurs ----------
 const IND = [
-  { id: "sma20", name: "Moyenne mobile 20", g: "Sur le graphique", c: "#e0a944", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 20 } } },
-  { id: "sma50", name: "Moyenne mobile 50", g: "Sur le graphique", c: "#3b82f6", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 50 } } },
-  { id: "sma200", name: "Moyenne mobile 200", g: "Sur le graphique", c: "#ef4444", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 200 } } },
-  { id: "ema9", name: "EMA 9", g: "Sur le graphique", c: "#14b8a6", tv: { id: "MAExp@tv-basicstudies", inputs: { length: 9 } } },
-  { id: "ema21", name: "EMA 21", g: "Sur le graphique", c: "#a855f7", tv: { id: "MAExp@tv-basicstudies", inputs: { length: 21 } } },
-  { id: "boll", name: "Bandes de Bollinger", g: "Sur le graphique", c: "#64748b", tv: "BB@tv-basicstudies" },
-  { id: "ichi", name: "Ichimoku", g: "Sur le graphique", c: "#0ea5e9", tv: "IchimokuCloud@tv-basicstudies" },
-  { id: "vwap", name: "VWAP (journalier)", g: "Sur le graphique", c: "#f97316", tv: "VWAP@tv-basicstudies" },
-  { id: "psar", name: "Parabolic SAR", g: "Sur le graphique", c: "#84cc16", tv: "PSAR@tv-basicstudies" },
-  { id: "st", name: "Supertrend", g: "Sur le graphique", c: "#22c55e" },
-  { id: "piv", name: "Points pivots", g: "Sur le graphique", c: "#94a3b8", tv: "PivotPointsStandard@tv-basicstudies" },
-  { id: "vol", name: "Volume", g: "Sur le graphique", c: "#94a3b8", tv: "Volume@tv-basicstudies" },
-  { id: "rsi", name: "RSI 14", g: "Sous le graphique", c: "#a855f7", tv: "RSI@tv-basicstudies" },
-  { id: "macd", name: "MACD 12 26 9", g: "Sous le graphique", c: "#3b82f6", tv: "MACD@tv-basicstudies" },
-  { id: "stoch", name: "Stochastique 14 3 3", g: "Sous le graphique", c: "#f97316", tv: "Stochastic@tv-basicstudies" },
-  { id: "atr", name: "ATR 14 (volatilité)", g: "Sous le graphique", c: "#64748b", tv: "ATR@tv-basicstudies" },
+  { id: "sma20", name: "Moyenne mobile 20", g: "Sur le graphique", c: "#f5a300", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 20 } } },
+  { id: "sma50", name: "Moyenne mobile 50", g: "Sur le graphique", c: "#2962ff", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 50 } } },
+  { id: "sma200", name: "Moyenne mobile 200", g: "Sur le graphique", c: "#6d4c41", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 200 } } },
+  { id: "ema9", name: "EMA 9", g: "Sur le graphique", c: "#00bcd4", tv: { id: "MAExp@tv-basicstudies", inputs: { length: 9 } } },
+  { id: "ema21", name: "EMA 21", g: "Sur le graphique", c: "#9c27b0", tv: { id: "MAExp@tv-basicstudies", inputs: { length: 21 } } },
+  { id: "boll", name: "Bandes de Bollinger", g: "Sur le graphique", c: "#7e57c2", tv: "BB@tv-basicstudies" },
+  { id: "ichi", name: "Ichimoku (nuage)", g: "Sur le graphique", c: "#ff4081", tv: "IchimokuCloud@tv-basicstudies" },
+  { id: "vwap", name: "VWAP (journalier)", g: "Sur le graphique", c: "#ff6d00", tv: "VWAP@tv-basicstudies" },
+  { id: "psar", name: "Parabolic SAR", g: "Sur le graphique", c: "#8bc34a", tv: "PSAR@tv-basicstudies" },
+  { id: "st", name: "Supertrend", g: "Sur le graphique", c: "#00c853" },
+  { id: "piv", name: "Points pivots", g: "Sur le graphique", c: "#607d8b", tv: "PivotPointsStandard@tv-basicstudies" },
+  { id: "vol", name: "Volume", g: "Sur le graphique", c: "#90a4ae", tv: "Volume@tv-basicstudies" },
+  { id: "fvg", name: "Imbalance (FVG)", g: "Structure du marché", c: "#29b6f6" },
+  { id: "swing", name: "Plus hauts / plus bas", g: "Structure du marché", c: "#ffb300" },
+  { id: "rsi", name: "RSI 14", g: "Sous le graphique", c: "#7e57c2", tv: "RSI@tv-basicstudies" },
+  { id: "macd", name: "MACD 12 26 9", g: "Sous le graphique", c: "#2962ff", tv: "MACD@tv-basicstudies" },
+  { id: "stoch", name: "Stochastique 14 3 3", g: "Sous le graphique", c: "#ff6d00", tv: "Stochastic@tv-basicstudies" },
+  { id: "atr", name: "ATR 14 (volatilité)", g: "Sous le graphique", c: "#78909c", tv: "ATR@tv-basicstudies" },
 ];
 const IKEY = "atelier-indicateurs-v1";
 let active = new Set(["sma50", "rsi"]);
 try { const a = JSON.parse(localStorage.getItem(IKEY)); if (Array.isArray(a)) active = new Set(a); } catch (e) {}
 let indSeries = [], indLines = [];
-const STEP = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 };
+const STEP = { "1s": 1, "5s": 5, "15s": 15, "30s": 30, "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 };
 function renderIndList() {
   const groups = [...new Set(IND.map(x => x.g))];
   $("indList").innerHTML = groups.map(g => `<h3>${g}</h3>` + IND.filter(x => x.g === g).map(x =>
@@ -150,49 +189,139 @@ function renderIndList() {
     if (tvMode || !MARKETS[cur].feed) drawTv();
   });
 }
+// Calque de dessin : nuage Ichimoku, remplissage Bollinger, zones d'imbalance, point de prix qui pulse
+const overlay = {
+  _p: null, clouds: [], boxes: [],
+  attached(p) { this._p = p; }, detached() { this._p = null; },
+  update() { this._p?.requestUpdate(); },
+  paneViews() {
+    return [{ zOrder: () => "bottom", renderer: () => ({ draw: target => target.useBitmapCoordinateSpace(sc => {
+      const ctx = sc.context, W = sc.bitmapSize.width, hr = sc.horizontalPixelRatio, vr = sc.verticalPixelRatio, ts = chart.timeScale();
+      for (const cl of this.clouds) {
+        for (let i = 1; i < cl.pts.length; i++) {
+          const p0 = cl.pts[i - 1], p1 = cl.pts[i];
+          const x0 = ts.timeToCoordinate(p0.time), x1 = ts.timeToCoordinate(p1.time);
+          if (x0 == null || x1 == null) continue;
+          const ya0 = candles.priceToCoordinate(p0.a), yb0 = candles.priceToCoordinate(p0.b), ya1 = candles.priceToCoordinate(p1.a), yb1 = candles.priceToCoordinate(p1.b);
+          if ([ya0, yb0, ya1, yb1].some(v => v == null)) continue;
+          ctx.fillStyle = cl.color ? cl.color : (p1.a >= p1.b ? "rgba(38,166,154,0.22)" : "rgba(239,83,80,0.22)");
+          ctx.beginPath(); ctx.moveTo(x0 * hr, ya0 * vr); ctx.lineTo(x1 * hr, ya1 * vr); ctx.lineTo(x1 * hr, yb1 * vr); ctx.lineTo(x0 * hr, yb0 * vr); ctx.closePath(); ctx.fill();
+        }
+      }
+      for (const bx of this.boxes) {
+        const x1 = ts.timeToCoordinate(bx.t1); if (x1 == null) continue;
+        const yt = candles.priceToCoordinate(bx.top), yb = candles.priceToCoordinate(bx.bot); if (yt == null || yb == null) continue;
+        ctx.fillStyle = bx.fill; ctx.fillRect(x1 * hr, Math.min(yt, yb) * vr, W - x1 * hr, Math.max(1, Math.abs(yb - yt)) * vr);
+        ctx.fillStyle = bx.stroke; ctx.font = `${10 * vr}px IBM Plex Mono, monospace`; ctx.fillText(bx.label, x1 * hr + 4 * hr, Math.min(yt, yb) * vr + 11 * vr);
+      }
+      // point du dernier prix, qui pulse pour montrer que le marché bouge
+      const last = candleData[candleData.length - 1];
+      if (last && MARKETS[cur].feed) {
+        const x = ts.timeToCoordinate(last.time), y = candles.priceToCoordinate(last.close);
+        if (x != null && y != null) {
+          const ph = (Date.now() % 1400) / 1400, up = last.close >= last.open;
+          ctx.fillStyle = up ? `rgba(31,157,90,${0.45 * (1 - ph)})` : `rgba(208,69,58,${0.45 * (1 - ph)})`;
+          ctx.beginPath(); ctx.arc(x * hr, y * vr, (4 + ph * 12) * hr, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = up ? "#1f9d5a" : "#d0453a"; ctx.beginPath(); ctx.arc(x * hr, y * vr, 3.5 * hr, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }) }) }];
+  },
+};
+setInterval(() => { if (!tvMode && !document.hidden) overlay.update(); }, 80);
+setInterval(() => { const el = $("tickAge"); if (!el) return; if (!lastTick) { el.textContent = ""; return; } const a = (Date.now() - lastTick) / 1000; el.textContent = a < 2 ? "· mis à jour à l'instant" : `· dernier prix il y a ${Math.round(a)} s`; el.style.color = a > 10 ? "var(--warn)" : ""; }, 500);
+let markersApi = null, legendItems = [];
 function renderIndicators() {
   if (!chart) return;
   indSeries.forEach(s => chart.removeSeries(s)); indSeries = [];
   indLines.forEach(l => candles.removePriceLine(l)); indLines = [];
+  overlay.clouds = []; overlay.boxes = []; legendItems = [];
+  if (!markersApi) markersApi = LC.createSeriesMarkers(candles, []);
+  markersApi.setMarkers([]);
   for (let i = chart.panes().length - 1; i > 0; i--) chart.removePane(i);
   const b = candleData;
-  if (!MARKETS[cur].feed || b.length < 30) { document.querySelector(".chartbox").style.height = ""; return; }
-  const c = b.map(x => x.close), t = b.map(x => x.time);
+  if (!MARKETS[cur].feed || b.length < 30) { document.querySelector(".chartbox").style.height = ""; renderLegend(); return; }
+  const c = b.map(x => x.close), t = b.map(x => x.time), d = MARKETS[cur].dec;
+  const lastOf = v => { for (let i = v.length - 1; i >= 0; i--) { const y = v[i] && typeof v[i] === "object" ? v[i].value : v[i]; if (y != null) return y; } return null; };
   const pts = v => v.map((y, i) => (y == null ? { time: t[i] } : { time: t[i], value: y }));
   const add = (def, opts, pane = 0) => { const s = chart.addSeries(def, { priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, ...opts }, pane); indSeries.push(s); return s; };
-  const line = (v, color, pane = 0, extra = {}) => add(LC.LineSeries, { color, lineWidth: 1, ...extra }, pane).setData(Array.isArray(v) && v.length && v[0] && typeof v[0] === "object" ? v.map(p => (p.value == null ? { time: p.time } : p)) : pts(v));
+  const line = (v, color, pane = 0, extra = {}) => { const s = add(LC.LineSeries, { color, lineWidth: 2, ...extra }, pane); s.setData(v.length && v[0] && typeof v[0] === "object" ? v.map(p => (p.value == null ? { time: p.time } : p)) : pts(v)); return s; };
+  const leg = (name, color, v, dec = d) => legendItems.push({ name, color, value: v == null ? "–" : (+v).toLocaleString("fr-FR", { maximumFractionDigits: dec, minimumFractionDigits: dec }) });
   const col = id => IND.find(x => x.id === id).c;
   let pane = 0;
-  if (active.has("sma20")) line(I.sma(c, 20), col("sma20"));
-  if (active.has("sma50")) line(I.sma(c, 50), col("sma50"));
-  if (active.has("sma200")) line(I.sma(c, 200), col("sma200"), 0, { lineWidth: 2 });
-  if (active.has("ema9")) line(I.ema(c, 9), col("ema9"));
-  if (active.has("ema21")) line(I.ema(c, 21), col("ema21"));
-  if (active.has("boll")) { const bb = I.bollinger(c); line(bb.up, col("boll")); line(bb.mid, col("boll"), 0, { lineStyle: 2 }); line(bb.lo, col("boll")); }
+  for (const [id, n, f] of [["sma20", 20, I.sma], ["sma50", 50, I.sma], ["sma200", 200, I.sma], ["ema9", 9, I.ema], ["ema21", 21, I.ema]]) {
+    if (!active.has(id)) continue; const v = f(c, n); line(v, col(id), 0, { lineWidth: id === "sma200" ? 3 : 2 }); leg(IND.find(x => x.id === id).name.replace("Moyenne mobile", "MM"), col(id), lastOf(v));
+  }
+  if (active.has("boll")) {
+    const bb = I.bollinger(c), cc = col("boll");
+    line(bb.up, cc, 0, { lineWidth: 1 }); line(bb.mid, cc, 0, { lineWidth: 1, lineStyle: 2 }); line(bb.lo, cc, 0, { lineWidth: 1 });
+    overlay.clouds.push({ color: "rgba(126,87,194,0.10)", pts: t.map((tt, i) => ({ time: tt, a: bb.up[i], b: bb.lo[i] })).filter(p => p.a != null) });
+    leg("Bollinger", cc, `${fmt(lastOf(bb.lo), d)} – ${fmt(lastOf(bb.up), d)}`, 0);
+    legendItems[legendItems.length - 1].value = `${fmt(lastOf(bb.lo), d)} – ${fmt(lastOf(bb.up), d)}`;
+  }
   if (active.has("ichi")) {
     const ic = I.ichimoku(b, STEP[tf]);
-    line(ic.tenkan, "#0ea5e9"); line(ic.kijun, "#be123c");
-    line(ic.spanA, "#22c55e", 0, { lineWidth: 1 }); line(ic.spanB, "#ef4444", 0, { lineWidth: 1 });
-    line(ic.chikou, "#a3a3a3", 0, { lineStyle: 1 });
+    line(ic.tenkan, "#ff4081", 0, { lineWidth: 2 }); line(ic.kijun, "#283593", 0, { lineWidth: 2 });
+    line(ic.spanA, "#43a047", 0, { lineWidth: 1 }); line(ic.spanB, "#e53935", 0, { lineWidth: 1 });
+    line(ic.chikou, "#bdbdbd", 0, { lineWidth: 1, lineStyle: 2 });
+    overlay.clouds.push({ pts: ic.spanA.map((p, i) => ({ time: p.time, a: p.value, b: ic.spanB[i].value })).filter(p => p.a != null && p.b != null) });
+    leg("Tenkan", "#ff4081", lastOf(ic.tenkan)); leg("Kijun", "#283593", lastOf(ic.kijun));
   }
-  if (active.has("vwap")) line(I.vwap(b, TZ), col("vwap"), 0, { lineWidth: 2 });
-  if (active.has("psar")) line(I.psar(b), col("psar"), 0, { lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 2 });
-  if (active.has("st")) { const sp = I.supertrend(b); add(LC.LineSeries, { lineWidth: 2 }).setData(sp.line.map((y, i) => (y == null ? { time: t[i] } : { time: t[i], value: y, color: sp.dir[i] === 1 ? "#22c55e" : "#ef4444" }))); }
-  if (active.has("piv")) { const p = I.pivots(b, TZ); if (p) for (const [k, v] of Object.entries(p)) indLines.push(candles.createPriceLine({ price: v, color: k === "P" ? "#64748b" : k[0] === "R" ? "#ef444499" : "#22c55e99", lineWidth: 1, lineStyle: 3, axisLabelVisible: false, title: k })); }
+  if (active.has("vwap")) { const v = I.vwap(b, TZ); line(v, col("vwap"), 0, { lineWidth: 2, lineStyle: 0 }); leg("VWAP", col("vwap"), lastOf(v)); }
+  if (active.has("psar")) { const v = I.psar(b); line(v, col("psar"), 0, { lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 2 }); leg("SAR", col("psar"), lastOf(v)); }
+  if (active.has("st")) { const sp = I.supertrend(b); add(LC.LineSeries, { lineWidth: 2 }).setData(sp.line.map((y, i) => (y == null ? { time: t[i] } : { time: t[i], value: y, color: sp.dir[i] === 1 ? "#00c853" : "#ff1744" }))); leg("Supertrend", sp.dir[sp.dir.length - 1] === 1 ? "#00c853" : "#ff1744", lastOf(sp.line)); }
+  if (active.has("piv")) { const p = I.pivots(b, TZ); if (p) for (const [k, v] of Object.entries(p)) indLines.push(candles.createPriceLine({ price: v, color: k === "P" ? "#607d8b" : k[0] === "R" ? "#e53935" : "#43a047", lineWidth: 1, lineStyle: 3, axisLabelVisible: true, title: "Pivot " + k })); }
   if (active.has("vol")) {
     const s = add(LC.HistogramSeries, { priceScaleId: "vol", priceFormat: { type: "volume" } });
     s.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
-    s.setData(b.map(x => ({ time: x.time, value: x.volume, color: x.close >= x.open ? "#1f9d5a55" : "#d0453a55" })));
+    s.setData(b.map(x => ({ time: x.time, value: x.volume, color: x.close >= x.open ? "rgba(38,166,154,0.45)" : "rgba(239,83,80,0.45)" })));
   }
-  if (active.has("rsi")) { pane++; line(I.rsi(c), col("rsi"), pane, { lastValueVisible: true }); const g = indSeries[indSeries.length - 1]; [70, 30].forEach(v => g.createPriceLine({ price: v, color: css("--muted"), lineWidth: 1, lineStyle: 2, axisLabelVisible: false })); }
-  if (active.has("macd")) { pane++; const m = I.macd(c); add(LC.HistogramSeries, {}, pane).setData(m.hist.map((y, i) => (y == null ? { time: t[i] } : { time: t[i], value: y, color: y >= 0 ? "#1f9d5a88" : "#d0453a88" }))); line(m.line, "#3b82f6", pane); line(m.signal, "#f97316", pane); }
-  if (active.has("stoch")) { pane++; const st = I.stoch(b); line(st.k, "#f97316", pane, { lastValueVisible: true }); line(st.d, "#3b82f6", pane); const g = indSeries[indSeries.length - 2]; [80, 20].forEach(v => g.createPriceLine({ price: v, color: css("--muted"), lineWidth: 1, lineStyle: 2, axisLabelVisible: false })); }
-  if (active.has("atr")) { pane++; line(I.atr(b), col("atr"), pane, { lastValueVisible: true }); }
-  document.querySelector(".chartbox").style.height = (window.innerWidth < 600 ? 420 : 560) + pane * 110 + "px";
+  if (active.has("fvg")) {
+    const at = I.atr(b), gaps = [];
+    for (let i = 2; i < b.length; i++) {
+      const min = (at[i] ?? 0) * 0.15;
+      if (b[i].low > b[i - 2].high && b[i].low - b[i - 2].high > min) gaps.push({ i, dir: 1, top: b[i].low, bot: b[i - 2].high });
+      if (b[i].high < b[i - 2].low && b[i - 2].low - b[i].high > min) gaps.push({ i, dir: -1, top: b[i - 2].low, bot: b[i].high });
+    }
+    // on garde les imbalances pas encore comblées par le prix
+    const open = gaps.filter(g => { for (let j = g.i + 1; j < b.length; j++) { if (g.dir === 1 && b[j].low <= g.bot) return false; if (g.dir === -1 && b[j].high >= g.top) return false; } return true; }).slice(-6);
+    overlay.boxes = open.map(g => ({ t1: b[g.i - 1].time, top: g.top, bot: g.bot, fill: g.dir === 1 ? "rgba(41,182,246,0.20)" : "rgba(255,112,67,0.22)", stroke: g.dir === 1 ? "#0288d1" : "#e64a19", label: g.dir === 1 ? "FVG ▲" : "FVG ▼" }));
+    legendItems.push({ name: "Imbalances ouvertes", color: col("fvg"), value: String(open.length) });
+  }
+  if (active.has("swing")) {
+    const k = 5, mk = [];
+    for (let i = k; i < b.length - k; i++) {
+      const L = b.slice(i - k, i), R = b.slice(i + 1, i + k + 1);
+      if (L.every(x => x.high < b[i].high) && R.every(x => x.high <= b[i].high)) mk.push({ time: b[i].time, position: "aboveBar", color: "#e53935", shape: "arrowDown", text: "PH" });
+      if (L.every(x => x.low > b[i].low) && R.every(x => x.low >= b[i].low)) mk.push({ time: b[i].time, position: "belowBar", color: "#43a047", shape: "arrowUp", text: "PB" });
+    }
+    markersApi.setMarkers(mk);
+  }
+  if (active.has("rsi")) { pane++; const v = I.rsi(c); const g = line(v, col("rsi"), pane, { lastValueVisible: true }); [70, 30].forEach(x => g.createPriceLine({ price: x, color: css("--muted"), lineWidth: 1, lineStyle: 2, axisLabelVisible: false })); leg("RSI", col("rsi"), lastOf(v), 1); }
+  if (active.has("macd")) { pane++; const m = I.macd(c); add(LC.HistogramSeries, {}, pane).setData(m.hist.map((y, i) => (y == null ? { time: t[i] } : { time: t[i], value: y, color: y >= 0 ? "rgba(38,166,154,0.7)" : "rgba(239,83,80,0.7)" }))); line(m.line, "#2962ff", pane, { lineWidth: 1 }); line(m.signal, "#ff6d00", pane, { lineWidth: 1 }); leg("MACD", "#2962ff", lastOf(m.line)); }
+  if (active.has("stoch")) { pane++; const st = I.stoch(b); const g = line(st.k, "#2962ff", pane, { lastValueVisible: true, lineWidth: 1 }); line(st.d, "#ff6d00", pane, { lineWidth: 1 }); [80, 20].forEach(x => g.createPriceLine({ price: x, color: css("--muted"), lineWidth: 1, lineStyle: 2, axisLabelVisible: false })); leg("Stoch %K", "#2962ff", lastOf(st.k), 1); }
+  if (active.has("atr")) { pane++; const v = I.atr(b); line(v, col("atr"), pane, { lastValueVisible: true }); leg("ATR", col("atr"), lastOf(v)); }
+  document.querySelector(".chartbox").style.height = (window.innerWidth < 600 ? 420 : 580) + pane * 110 + "px";
   chart.panes().forEach((p, i) => { if (i > 0) p.setHeight(100); });
+  overlay.update(); renderLegend();
+}
+function renderLegend() {
+  const el = $("indLegend"); if (!el) return;
+  el.innerHTML = legendItems.map(x => `<span><i style="background:${x.color}"></i>${x.name} <b>${x.value}</b></span>`).join("");
+  el.hidden = !legendItems.length || tvMode;
 }
 let indTimer = 0;
-function refreshIndicatorsSoon() { if (Date.now() - indTimer > 3000) { indTimer = Date.now(); renderIndicators(); } }
+function refreshIndicatorsSoon() { if (Date.now() - indTimer > (SEC[tf] ? 1000 : 2000)) { indTimer = Date.now(); renderIndicators(); } }
+function fvgList() {
+  const b = candleData, out = [];
+  for (let i = 2; i < b.length; i++) {
+    if (b[i].low > b[i - 2].high) out.push({ i, dir: 1, top: b[i].low, bot: b[i - 2].high });
+    if (b[i].high < b[i - 2].low) out.push({ i, dir: -1, top: b[i - 2].low, bot: b[i].high });
+  }
+  const d = MARKETS[cur].dec;
+  const open = out.filter(g => !b.slice(g.i + 1).some(x => (g.dir === 1 ? x.low <= g.bot : x.high >= g.top))).slice(-6);
+  return open.length ? open.map(g => `${g.dir === 1 ? "haussière" : "baissière"} ${g.bot.toFixed(d)}–${g.top.toFixed(d)}`).join(", ") : "aucune";
+}
 // Valeurs actuelles de tous les indicateurs, pour Claude
 function indicatorSnapshot() {
   const b = candleData, c = b.map(x => x.close), last = a => a[a.length - 1], d = MARKETS[cur].dec, r = v => (v == null ? "n/d" : (+v).toFixed(d));
@@ -204,6 +333,7 @@ function indicatorSnapshot() {
     `Bollinger 20/2 : haute ${r(last(bb.up))}, milieu ${r(last(bb.mid))}, basse ${r(last(bb.lo))}`,
     `Ichimoku : tenkan ${r(last(ic.tenkan))}, kijun ${r(last(ic.kijun))}, nuage actuel entre ${r(spanAnow)} et ${r(spanBnow)}, nuage futur (dans 26 bougies) entre ${r(last(ic.spanA).value)} et ${r(last(ic.spanB).value)}, chikou ${r(c[idx])} comparée au prix d'il y a 26 bougies ${r(c[idx - 26])}`,
     `VWAP du jour ${r(last(I.vwap(b, TZ)))} ; Parabolic SAR ${r(last(I.psar(b)))} ; Supertrend ${r(last(sp.line))} (${last(sp.dir) === 1 ? "haussier" : "baissier"})`,
+    `Imbalances (FVG) non comblées : ${fvgList()}`,
     `Pivots du jour : ${pv ? Object.entries(pv).map(([k, v]) => `${k} ${r(v)}`).join(", ") : "n/d"}`,
     `RSI14 ${last(I.rsi(c))?.toFixed(1)} ; MACD ${last(m.line)?.toFixed(d)} / signal ${last(m.signal)?.toFixed(d)} / histogramme ${last(m.hist)?.toFixed(d)} ; Stochastique %K ${last(st.k)?.toFixed(1)} %D ${last(st.d)?.toFixed(1)} ; ATR14 ${r(last(I.atr(b)))}`,
   ].join("\n");
@@ -383,14 +513,14 @@ function drawTv() {
   const useTv = tvMode || !MARKETS[cur].feed;
   $("tv").hidden = !useTv; $("chart").hidden = useTv;
   ["drawBar", "undo", "clearDraw", "seps"].forEach(i => { if ($(i)) $(i).hidden = useTv; });
-  document.querySelector(".chartbox").classList.toggle("tvmode", useTv); $("legend").hidden = useTv; $("dragNote").hidden = useTv;
+  document.querySelector(".chartbox").classList.toggle("tvmode", useTv); renderLegend(); $("legend").hidden = useTv; $("dragNote").hidden = useTv;
   $("viewTv").textContent = useTv ? "Voir mes trades et les tracés de Claude" : "Revenir à la vue TradingView";
   $("viewTv").hidden = !MARKETS[cur].feed;
   if (!useTv) return;
   if (!window.TradingView) { $("tv").textContent = "Graphique indisponible : vérifie ta connexion internet puis recharge la page."; return; }
   $("tv").innerHTML = "";
   new TradingView.widget({
-    container_id: "tv", symbol: MARKETS[cur].tv, interval: TF.find(t => t[0] === tf)[2], autosize: true, timezone: "Europe/Paris",
+    container_id: "tv", symbol: MARKETS[cur].tv, interval: TF.find(t => t[0] === tf)[2] || "1", autosize: true, timezone: "Europe/Paris",
     theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light", style: "1", locale: "fr",
     hide_side_toolbar: false, allow_symbol_change: false, withdateranges: true, details: true,
     studies: IND.filter(x => active.has(x.id) && x.tv).map(x => x.tv),
@@ -403,7 +533,11 @@ function renderSymbols() {
     `<button class="chip sym" data-k="${k}" aria-pressed="${k === cur}"><b>${m.name}</b><span id="px_${k}">${fmt(price[k], m.dec)}</span></button>`).join("");
   $("symbols").querySelectorAll("button").forEach(b => b.onclick = () => { cur = b.dataset.k; refreshView(); });
   $("tfBar").innerHTML = TF.map(([k, l]) => `<button class="chip" data-tf="${k}" aria-pressed="${k === tf}">${l}</button>`).join("");
-  $("tfBar").querySelectorAll("button").forEach(b => b.onclick = () => { tf = b.dataset.tf; refreshView(); });
+  $("tfBar").querySelectorAll("button").forEach(b => b.onclick = () => {
+    tf = b.dataset.tf;
+    if (SEC[tf] && tvMode && MARKETS[cur].feed) { tvMode = false; say("Les secondes s'affichent sur le graphique « mes trades » : TradingView gratuit ne propose que les minutes et plus."); }
+    refreshView();
+  });
 }
 function refreshView() {
   setTool("none"); renderSymbols(); renderTicket(); drawTv();
@@ -442,8 +576,9 @@ function startTickPoll() {
 }
 // fait vivre la dernière bougie avec chaque prix reçu
 function liveCandle(k, p) {
-  if (k !== cur || !candleData.length) return;
-  const step = STEP[tf], now = Math.floor(Date.now() / 1000) + TZ, start = now - (now % step);
+  if (k !== cur) return;
+  const step = STEP[tf], now = Math.floor(Date.now() / 1000) + TZ, start = now - ((now - TZ) % step);
+  if (!candleData.length) { if (!SEC[tf]) return; const b0 = { time: start, open: p, high: p, low: p, close: p, volume: 0 }; candleData.push(b0); candles.update(b0); return; }
   const last = candleData[candleData.length - 1];
   let bar;
   if (start > last.time) { bar = { time: start, open: last.close, high: Math.max(last.close, p), low: Math.min(last.close, p), close: p, volume: 0 }; candleData.push(bar); }
@@ -452,8 +587,9 @@ function liveCandle(k, p) {
 }
 let prevShown = {};
 let lastRender = 0;
+let lastTick = 0;
 function onPrice(k, p) {
-  price[k] = p; check(k);
+  price[k] = p; if (k === cur) lastTick = Date.now(); check(k);
   if (MARKETS[k].feed) liveCandle(k, p);
   const now = Date.now();
   if (now - lastRender > 250) {
@@ -536,7 +672,7 @@ function renderTicket() {
   if (!m.feed) {
     $("feed").innerHTML = '<span class="dot"></span>Pas de flux de prix gratuit pour le Nasdaq : saisis le prix lu sur le graphique. Les stops et ordres limite sont vérifiés à chaque saisie. Claude ne peut pas analyser ce marché.';
     if (S.nasPrice && !$("manual").value) $("manual").value = S.nasPrice;
-  } else $("feed").innerHTML = `<span class="dot ${wsOk ? "on" : ""}"></span>${wsOk ? "Prix en direct" : "Connexion au prix…"} (${feedName || "Binance"}${cur === "XAU" ? ", jeton PAXG adossé à l'or : il peut s'écarter de quelques dollars de l'once" : ""})`;
+  } else $("feed").innerHTML = `<span class="dot ${wsOk ? "on" : ""}"></span>${wsOk ? "Prix en direct" : "Connexion au prix…"} (${feedName || "Binance"}${cur === "XAU" ? ", jeton PAXG adossé à l'or : il peut s'écarter de quelques dollars de l'once" : ""}) <span id="tickAge"></span>`;
 }
 const side = d => (d === 1 ? '<span class="gain">Achat</span>' : '<span class="loss">Vente</span>');
 function renderAll() {
