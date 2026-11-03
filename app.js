@@ -531,7 +531,16 @@ function drawTv() {
 function renderSymbols() {
   $("symbols").innerHTML = Object.entries(MARKETS).map(([k, m]) =>
     `<button class="chip sym" data-k="${k}" aria-pressed="${k === cur}"><b>${m.name}</b><span id="px_${k}">${fmt(price[k], m.dec)}</span></button>`).join("");
-  $("symbols").querySelectorAll("button").forEach(b => b.onclick = () => { cur = b.dataset.k; refreshView(); });
+  $("symbols").querySelectorAll("button").forEach(b => b.onclick = () => {
+    if (b.dataset.k === cur) return;
+    cur = b.dataset.k;
+    // le ticket repart à zéro : les SL / TP / prix limite d'un marché n'ont pas de sens sur un autre
+    ["sl", "tp", "limitPx"].forEach(i => $(i).value = "");
+    $("qty").value = { BTC: "0.01", XAU: "1", NAS: "1" }[cur];
+    ["cEntry", "cStop", "cTp"].forEach(i => $(i).value = ""); calc();
+    setType("market"); say(""); $("answer").hidden = true; lastIdea = null;
+    refreshView();
+  });
   $("tfBar").innerHTML = TF.map(([k, l]) => `<button class="chip" data-tf="${k}" aria-pressed="${k === tf}">${l}</button>`).join("");
   $("tfBar").querySelectorAll("button").forEach(b => b.onclick = () => {
     tf = b.dataset.tf;
