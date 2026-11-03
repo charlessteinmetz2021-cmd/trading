@@ -361,25 +361,55 @@ function refreshView() {
 
 // ---------- flux de prix pour le moteur ----------
 let wsOk = false;
-let tickPoll = 0;
+let tickPoll = 0, feedName = "";
+// Prix en direct : Binance, sinon Coinbase en WebSocket, sinon interrogation de Coinbase chaque seconde
 function connect() {
-  const ws = new WebSocket("wss://data-stream.binance.vision/stream?streams=btcusdt@miniTicker/paxgusdt@miniTicker");
   let opened = false;
-  ws.onopen = () => { opened = true; wsOk = true; clearInterval(tickPoll); tickPoll = 0; renderTicket(); };
-  ws.onmessage = ev => { try { const d = JSON.parse(ev.data).data; onPrice(d.s === "BTCUSDT" ? "BTC" : "XAU", +d.c); } catch (e) {} };
-  ws.onclose = () => { wsOk = false; if (!opened) startTickPoll(); renderTicket(); setTimeout(connect, opened ? 5000 : 30000); };
+  const ws = new WebSocket("wss://data-stream.binance.vision/stream?streams=btcusdt@trade/paxgusdt@trade");
+  const timer = setTimeout(() => { if (!opened) { ws.onclose = null; ws.close(); connectCoinbase(); } }, 5000);
+  ws.onopen = () => { opened = true; clearTimeout(timer); wsOk = true; feedName = "Binance"; renderTicket(); };
+  ws.onmessage = ev => { try { const d = JSON.parse(ev.data).data; onPrice(d.s === "BTCUSDT" ? "BTC" : "XAU", +d.p); } catch (e) {} };
+  ws.onclose = () => { clearTimeout(timer); wsOk = false; renderTicket(); if (opened) setTimeout(connect, 3000); else connectCoinbase(); };
 }
-// secours : prix Coinbase toutes les 3 secondes
+function connectCoinbase() {
+  let opened = false;
+  let ws;
+  try { ws = new WebSocket("wss://ws-feed.exchange.coinbase.com"); } catch (e) { return startTickPoll(); }
+  const timer = setTimeout(() => { if (!opened) { ws.onclose = null; ws.close(); startTickPoll(); } }, 5000);
+  ws.onopen = () => { opened = true; clearTimeout(timer); wsOk = true; feedName = "Coinbase"; clearInterval(tickPoll); tickPoll = 0;
+    ws.send(JSON.stringify({ type: "subscribe", product_ids: ["BTC-USD", "PAXG-USD"], channels: ["ticker"] })); renderTicket(); };
+  ws.onmessage = ev => { try { const d = JSON.parse(ev.data); if (d.type === "ticker" && d.price) onPrice(d.product_id === "BTC-USD" ? "BTC" : "XAU", +d.price); } catch (e) {} };
+  ws.onclose = () => { clearTimeout(timer); wsOk = false; renderTicket(); if (opened) setTimeout(connectCoinbase, 3000); else startTickPoll(); };
+}
 function startTickPoll() {
   if (tickPoll) return;
-  const run = async () => { for (const [k, id] of [["BTC", "BTC-USD"], ["XAU", "PAXG-USD"]]) { try { const r = await fetch(`https://api.exchange.coinbase.com/products/${id}/ticker`); const j = await r.json(); if (j.price) { wsOk = true; onPrice(k, +j.price); } } catch (e) {} } renderTicket(); };
-  run(); tickPoll = setInterval(run, 3000);
+  feedName = "Coinbase, mise à jour chaque seconde";
+  const run = async () => { await Promise.all([["BTC", "BTC-USD"], ["XAU", "PAXG-USD"]].map(async ([k, id]) => { try { const r = await fetch(`https://api.exchange.coinbase.com/products/${id}/ticker`); const j = await r.json(); if (j.price) { wsOk = true; onPrice(k, +j.price); } } catch (e) {} })); renderTicket(); };
+  run(); tickPoll = setInterval(run, 1000);
+  setTimeout(() => { clearInterval(tickPoll); tickPoll = 0; connect(); }, 120000); // réessaie le direct toutes les 2 minutes
 }
+// fait vivre la dernière bougie avec chaque prix reçu
+function liveCandle(k, p) {
+  if (k !== cur || !candleData.length) return;
+  const step = STEP[tf], now = Math.floor(Date.now() / 1000) + TZ, start = now - (now % step);
+  const last = candleData[candleData.length - 1];
+  let bar;
+  if (start > last.time) { bar = { time: start, open: last.close, high: Math.max(last.close, p), low: Math.min(last.close, p), close: p, volume: 0 }; candleData.push(bar); }
+  else { bar = { ...last, close: p, high: Math.max(last.high, p), low: Math.min(last.low, p) }; candleData[candleData.length - 1] = bar; }
+  candles.update(bar);
+}
+let prevShown = {};
 let lastRender = 0;
 function onPrice(k, p) {
   price[k] = p; check(k);
+  if (MARKETS[k].feed) liveCandle(k, p);
   const now = Date.now();
-  if (now - lastRender > 400) { lastRender = now; renderAll(); if (k === cur) updatePosTitles(); }
+  if (now - lastRender > 250) {
+    lastRender = now; renderAll(); if (k === cur) updatePosTitles();
+    const el = $("oPrice"), old = prevShown[cur];
+    if (old != null && price[cur] !== old) { el.style.color = price[cur] > old ? "var(--gain)" : "var(--loss)"; clearTimeout(el._t); el._t = setTimeout(() => el.style.color = "", 600); }
+    prevShown[cur] = price[cur];
+  }
 }
 
 // ---------- moteur de simulation ----------
@@ -452,7 +482,7 @@ function renderTicket() {
   if (!m.feed) {
     $("feed").innerHTML = '<span class="dot"></span>Pas de flux de prix gratuit pour le Nasdaq : saisis le prix lu sur le graphique. Les stops et ordres limite sont vérifiés à chaque saisie. Claude ne peut pas analyser ce marché.';
     if (S.nasPrice && !$("manual").value) $("manual").value = S.nasPrice;
-  } else $("feed").innerHTML = `<span class="dot ${wsOk ? "on" : ""}"></span>${wsOk ? "Prix en direct" : "Connexion au prix…"} (${tickPoll ? "Coinbase" : "Binance"}${cur === "XAU" ? ", jeton PAXG adossé à l'or : il peut s'écarter de quelques dollars de l'once" : ""})`;
+  } else $("feed").innerHTML = `<span class="dot ${wsOk ? "on" : ""}"></span>${wsOk ? "Prix en direct" : "Connexion au prix…"} (${feedName || "Binance"}${cur === "XAU" ? ", jeton PAXG adossé à l'or : il peut s'écarter de quelques dollars de l'once" : ""})`;
 }
 const side = d => (d === 1 ? '<span class="gain">Achat</span>' : '<span class="loss">Vente</span>');
 function renderAll() {
