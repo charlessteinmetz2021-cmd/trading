@@ -19,7 +19,7 @@ const signCls = v => (v > 0 ? "gain" : v < 0 ? "loss" : "");
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 const price = { BTC: null, XAU: null, NAS: null };
-let cur = "BTC", tf = "15m", orderType = "market", tool = "none", pending = null, tvMode = false;
+let cur = "BTC", tf = "15m", orderType = "market", tool = "none", pending = null, tvMode = true;
 
 // ---------- état sauvegardé dans le navigateur ----------
 const KEY = "atelier-trading-v1";
@@ -61,56 +61,77 @@ function setPrecision() {
 }
 
 let klineWs = null;
+const CB = { BTCUSDT: "BTC-USD", PAXGUSDT: "PAXG-USD" };
+const CB_GRAN = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 21600, "1d": 86400 };
+// Historique : Binance (deux adresses), puis Coinbase si Binance est bloqué chez l'utilisateur
+async function fetchCandles(feed, frame) {
+  for (const host of ["https://data-api.binance.vision", "https://api.binance.com"]) {
+    try {
+      const r = await fetch(`${host}/api/v3/klines?symbol=${feed}&interval=${frame}&limit=500`);
+      if (!r.ok) continue;
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length) return { src: "Binance", rows: rows.map(k => ({ time: Math.floor(k[0] / 1000) + TZ, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] })) };
+    } catch (e) {}
+  }
+  try {
+    const r = await fetch(`https://api.exchange.coinbase.com/products/${CB[feed]}/candles?granularity=${CB_GRAN[frame]}`);
+    const rows = await r.json();
+    if (Array.isArray(rows) && rows.length) return { src: "Coinbase", rows: rows.map(k => ({ time: k[0] + TZ, low: +k[1], high: +k[2], open: +k[3], close: +k[4], volume: +k[5] })).sort((a, b) => a.time - b.time) };
+  } catch (e) {}
+  return null;
+}
+let dataSrc = null;
 async function loadCandles() {
   if (klineWs) { klineWs.onclose = null; klineWs.close(); klineWs = null; }
+  clearInterval(pollTimer);
   candleData = [];
   candles.setData([]);
   const m = MARKETS[cur];
   if (!m.feed) return;
   setPrecision();
-  try {
-    const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${m.feed}&interval=${tf}&limit=500`);
-    const rows = await r.json();
-    candleData = rows.map(k => ({ time: Math.floor(k[0] / 1000) + TZ, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] }));
-    candles.setData(candleData);
-    chart.timeScale().scrollToRealTime();
-    renderDrawings(); renderPosLines(); renderIndicators();
-  } catch (e) {
-    say("Impossible de charger l'historique des prix. Vérifie ta connexion puis recharge la page.");
-  }
   const sym = cur, frame = tf;
-  klineWs = new WebSocket(`wss://stream.binance.com:9443/ws/${m.feed.toLowerCase()}@kline_${tf}`);
-  klineWs.onmessage = ev => {
+  const res = await fetchCandles(m.feed, tf);
+  if (sym !== cur || frame !== tf) return;
+  if (!res) { dataSrc = null; $("indStatus").textContent = "Les prix ne se chargent pas sur ta connexion (Binance et Coinbase injoignables). Les indicateurs restent disponibles sur la vue TradingView."; renderIndicators(); return; }
+  dataSrc = res.src; candleData = res.rows;
+  $("indStatus").textContent = `Données : ${res.src}, ${candleData.length} bougies.`;
+  candles.setData(candleData);
+  chart.timeScale().scrollToRealTime();
+  renderDrawings(); renderPosLines(); renderIndicators();
+  const onBar = bar => {
     if (sym !== cur || frame !== tf) return;
-    const k = JSON.parse(ev.data).k;
-    const bar = { time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v };
     const last = candleData[candleData.length - 1];
     if (last && last.time === bar.time) candleData[candleData.length - 1] = bar; else if (!last || bar.time > last.time) candleData.push(bar);
-    candles.update(bar);
-    refreshIndicatorsSoon();
+    candles.update(bar); refreshIndicatorsSoon();
   };
-  klineWs.onclose = () => setTimeout(() => { if (sym === cur && frame === tf) loadCandles(); }, 5000);
+  if (res.src === "Binance") {
+    klineWs = new WebSocket(`wss://data-stream.binance.vision/ws/${m.feed.toLowerCase()}@kline_${tf}`);
+    klineWs.onmessage = ev => { const k = JSON.parse(ev.data).k; onBar({ time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v }); };
+    klineWs.onclose = () => setTimeout(() => { if (sym === cur && frame === tf) loadCandles(); }, 5000);
+  } else {
+    pollTimer = setInterval(async () => { const r2 = await fetchCandles(m.feed, frame); if (r2) onBar(r2.rows[r2.rows.length - 1]); }, 15000);
+  }
 }
-
+let pollTimer = 0;
 
 // ---------- indicateurs ----------
 const IND = [
-  { id: "sma20", name: "Moyenne mobile 20", g: "Sur le graphique", c: "#e0a944" },
-  { id: "sma50", name: "Moyenne mobile 50", g: "Sur le graphique", c: "#3b82f6" },
-  { id: "sma200", name: "Moyenne mobile 200", g: "Sur le graphique", c: "#ef4444" },
-  { id: "ema9", name: "EMA 9", g: "Sur le graphique", c: "#14b8a6" },
-  { id: "ema21", name: "EMA 21", g: "Sur le graphique", c: "#a855f7" },
-  { id: "boll", name: "Bandes de Bollinger", g: "Sur le graphique", c: "#64748b" },
-  { id: "ichi", name: "Ichimoku", g: "Sur le graphique", c: "#0ea5e9" },
-  { id: "vwap", name: "VWAP (journalier)", g: "Sur le graphique", c: "#f97316" },
-  { id: "psar", name: "Parabolic SAR", g: "Sur le graphique", c: "#84cc16" },
+  { id: "sma20", name: "Moyenne mobile 20", g: "Sur le graphique", c: "#e0a944", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 20 } } },
+  { id: "sma50", name: "Moyenne mobile 50", g: "Sur le graphique", c: "#3b82f6", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 50 } } },
+  { id: "sma200", name: "Moyenne mobile 200", g: "Sur le graphique", c: "#ef4444", tv: { id: "MASimple@tv-basicstudies", inputs: { length: 200 } } },
+  { id: "ema9", name: "EMA 9", g: "Sur le graphique", c: "#14b8a6", tv: { id: "MAExp@tv-basicstudies", inputs: { length: 9 } } },
+  { id: "ema21", name: "EMA 21", g: "Sur le graphique", c: "#a855f7", tv: { id: "MAExp@tv-basicstudies", inputs: { length: 21 } } },
+  { id: "boll", name: "Bandes de Bollinger", g: "Sur le graphique", c: "#64748b", tv: "BB@tv-basicstudies" },
+  { id: "ichi", name: "Ichimoku", g: "Sur le graphique", c: "#0ea5e9", tv: "IchimokuCloud@tv-basicstudies" },
+  { id: "vwap", name: "VWAP (journalier)", g: "Sur le graphique", c: "#f97316", tv: "VWAP@tv-basicstudies" },
+  { id: "psar", name: "Parabolic SAR", g: "Sur le graphique", c: "#84cc16", tv: "PSAR@tv-basicstudies" },
   { id: "st", name: "Supertrend", g: "Sur le graphique", c: "#22c55e" },
-  { id: "piv", name: "Points pivots", g: "Sur le graphique", c: "#94a3b8" },
-  { id: "vol", name: "Volume", g: "Sur le graphique", c: "#94a3b8" },
-  { id: "rsi", name: "RSI 14", g: "Sous le graphique", c: "#a855f7" },
-  { id: "macd", name: "MACD 12 26 9", g: "Sous le graphique", c: "#3b82f6" },
-  { id: "stoch", name: "Stochastique 14 3 3", g: "Sous le graphique", c: "#f97316" },
-  { id: "atr", name: "ATR 14 (volatilité)", g: "Sous le graphique", c: "#64748b" },
+  { id: "piv", name: "Points pivots", g: "Sur le graphique", c: "#94a3b8", tv: "PivotPointsStandard@tv-basicstudies" },
+  { id: "vol", name: "Volume", g: "Sur le graphique", c: "#94a3b8", tv: "Volume@tv-basicstudies" },
+  { id: "rsi", name: "RSI 14", g: "Sous le graphique", c: "#a855f7", tv: "RSI@tv-basicstudies" },
+  { id: "macd", name: "MACD 12 26 9", g: "Sous le graphique", c: "#3b82f6", tv: "MACD@tv-basicstudies" },
+  { id: "stoch", name: "Stochastique 14 3 3", g: "Sous le graphique", c: "#f97316", tv: "Stochastic@tv-basicstudies" },
+  { id: "atr", name: "ATR 14 (volatilité)", g: "Sous le graphique", c: "#64748b", tv: "ATR@tv-basicstudies" },
 ];
 const IKEY = "atelier-indicateurs-v1";
 let active = new Set(["sma50", "rsi"]);
@@ -120,11 +141,12 @@ const STEP = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 8
 function renderIndList() {
   const groups = [...new Set(IND.map(x => x.g))];
   $("indList").innerHTML = groups.map(g => `<h3>${g}</h3>` + IND.filter(x => x.g === g).map(x =>
-    `<label><input type="checkbox" data-ind="${x.id}" ${active.has(x.id) ? "checked" : ""}><i style="background:${x.c}"></i>${x.name}</label>`).join("")).join("");
+    `<label><input type="checkbox" data-ind="${x.id}" ${active.has(x.id) ? "checked" : ""}><i style="background:${x.c}"></i>${x.name}${x.tv ? "" : ' <small style="color:var(--muted)">(vue mes trades)</small>'}</label>`).join("")).join("");
   $("indList").querySelectorAll("input").forEach(cb => cb.onchange = () => {
     cb.checked ? active.add(cb.dataset.ind) : active.delete(cb.dataset.ind);
     try { localStorage.setItem(IKEY, JSON.stringify([...active])); } catch (e) {}
     renderIndicators();
+    if (tvMode || !MARKETS[cur].feed) drawTv();
   });
 }
 function renderIndicators() {
@@ -308,16 +330,18 @@ function setupDrag() {
 function drawTv() {
   const useTv = tvMode || !MARKETS[cur].feed;
   $("tv").hidden = !useTv; $("chart").hidden = useTv;
-  $("drawBar").style.opacity = useTv ? .4 : 1;
-  ["undo", "clearDraw"].forEach(i => $(i).disabled = useTv);
-  $("drawBar").querySelectorAll("button").forEach(b => b.disabled = useTv);
+  ["drawBar", "undo", "clearDraw", "seps"].forEach(i => { if ($(i)) $(i).hidden = useTv; });
+  document.querySelector(".chartbox").classList.toggle("tvmode", useTv); $("legend").hidden = useTv; $("dragNote").hidden = useTv;
+  $("viewTv").textContent = useTv ? "Voir mes trades et les tracés de Claude" : "Revenir à la vue TradingView";
+  $("viewTv").hidden = !MARKETS[cur].feed;
   if (!useTv) return;
   if (!window.TradingView) { $("tv").textContent = "Graphique indisponible : vérifie ta connexion internet puis recharge la page."; return; }
   $("tv").innerHTML = "";
   new TradingView.widget({
     container_id: "tv", symbol: MARKETS[cur].tv, interval: TF.find(t => t[0] === tf)[2], autosize: true, timezone: "Europe/Paris",
     theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light", style: "1", locale: "fr",
-    hide_side_toolbar: false, allow_symbol_change: false, withdateranges: true, studies: ["RSI@tv-basicstudies"],
+    hide_side_toolbar: false, allow_symbol_change: false, withdateranges: true, details: true,
+    studies: IND.filter(x => active.has(x.id) && x.tv).map(x => x.tv),
   });
 }
 
@@ -337,11 +361,19 @@ function refreshView() {
 
 // ---------- flux de prix pour le moteur ----------
 let wsOk = false;
+let tickPoll = 0;
 function connect() {
-  const ws = new WebSocket("wss://stream.binance.com:9443/stream?streams=btcusdt@miniTicker/paxgusdt@miniTicker");
-  ws.onopen = () => { wsOk = true; renderTicket(); };
+  const ws = new WebSocket("wss://data-stream.binance.vision/stream?streams=btcusdt@miniTicker/paxgusdt@miniTicker");
+  let opened = false;
+  ws.onopen = () => { opened = true; wsOk = true; clearInterval(tickPoll); tickPoll = 0; renderTicket(); };
   ws.onmessage = ev => { try { const d = JSON.parse(ev.data).data; onPrice(d.s === "BTCUSDT" ? "BTC" : "XAU", +d.c); } catch (e) {} };
-  ws.onclose = () => { wsOk = false; renderTicket(); setTimeout(connect, 5000); };
+  ws.onclose = () => { wsOk = false; if (!opened) startTickPoll(); renderTicket(); setTimeout(connect, opened ? 5000 : 30000); };
+}
+// secours : prix Coinbase toutes les 3 secondes
+function startTickPoll() {
+  if (tickPoll) return;
+  const run = async () => { for (const [k, id] of [["BTC", "BTC-USD"], ["XAU", "PAXG-USD"]]) { try { const r = await fetch(`https://api.exchange.coinbase.com/products/${id}/ticker`); const j = await r.json(); if (j.price) { wsOk = true; onPrice(k, +j.price); } } catch (e) {} } renderTicket(); };
+  run(); tickPoll = setInterval(run, 3000);
 }
 let lastRender = 0;
 function onPrice(k, p) {
@@ -420,7 +452,7 @@ function renderTicket() {
   if (!m.feed) {
     $("feed").innerHTML = '<span class="dot"></span>Pas de flux de prix gratuit pour le Nasdaq : saisis le prix lu sur le graphique. Les stops et ordres limite sont vérifiés à chaque saisie. Claude ne peut pas analyser ce marché.';
     if (S.nasPrice && !$("manual").value) $("manual").value = S.nasPrice;
-  } else $("feed").innerHTML = `<span class="dot ${wsOk ? "on" : ""}"></span>${wsOk ? "Prix en direct" : "Connexion au prix…"} (Binance${cur === "XAU" ? ", jeton PAXG adossé à l'or : il peut s'écarter de quelques dollars de l'once" : ""})`;
+  } else $("feed").innerHTML = `<span class="dot ${wsOk ? "on" : ""}"></span>${wsOk ? "Prix en direct" : "Connexion au prix…"} (${tickPoll ? "Coinbase" : "Binance"}${cur === "XAU" ? ", jeton PAXG adossé à l'or : il peut s'écarter de quelques dollars de l'once" : ""})`;
 }
 const side = d => (d === 1 ? '<span class="gain">Achat</span>' : '<span class="loss">Vente</span>');
 function renderAll() {
@@ -598,7 +630,7 @@ $("qBuy").onclick = () => place(1); $("qSell").onclick = () => place(-1);
 $("drawBar").querySelectorAll("button").forEach(b => b.onclick = () => setTool(b.dataset.tool));
 $("undo").onclick = () => { drawings().mine.pop(); saveD(); renderDrawings(); };
 $("clearDraw").onclick = () => { drawings().mine = []; saveD(); renderDrawings(); };
-$("viewTv").onclick = () => { tvMode = !tvMode; $("viewTv").setAttribute("aria-pressed", tvMode); drawTv(); };
+$("viewTv").onclick = () => { tvMode = !tvMode; drawTv(); if (!tvMode) { chart.timeScale().scrollToRealTime(); renderIndicators(); } };
 $("manual").addEventListener("change", () => { const v = +$("manual").value; if (v > 0) { S.nasPrice = v; save(); onPrice("NAS", v); renderAll(); } });
 $("resetBtn").onclick = () => { $("resetConfirm").hidden = false; };
 $("resetNo").onclick = () => { $("resetConfirm").hidden = true; };

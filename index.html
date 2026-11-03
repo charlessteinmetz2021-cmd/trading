@@ -47,6 +47,9 @@ h2{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu
 .hud{position:absolute;top:8px;left:8px;z-index:5;display:grid;gap:4px;pointer-events:none;font-family:var(--mono);font-size:.74rem;font-variant-numeric:tabular-nums}
 .hud > div{background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:6px;padding:3px 8px;pointer-events:auto;display:flex;gap:8px;align-items:center}
 .hud button{font:inherit;font-size:.72rem;padding:1px 6px;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.tvmode .hud{top:auto;bottom:44px;left:56px}
+.tvmode .quick{top:auto;bottom:44px;right:80px}
+.tvmode{height:640px}
 .hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:5;background:var(--fg);color:var(--panel);font-size:.8rem;padding:4px 12px;border-radius:99px}
 .quick{position:absolute;top:8px;right:70px;z-index:5;display:flex;gap:4px}
 .quick button{font:inherit;font-weight:600;font-size:.8rem;padding:5px 12px;border:0;border-radius:6px;color:#fff;cursor:pointer}
@@ -109,7 +112,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
       <div class="bar" role="group" aria-label="Marché" id="symbols"></div>
       <div class="bar" id="tools">
         <span id="tfBar" class="bar" role="group" aria-label="Unité de temps"></span>
-        <span class="sep"></span>
+        <span class="sep" id="seps"></span>
         <span class="bar" role="group" aria-label="Outils de dessin" id="drawBar">
           <button class="chip" data-tool="none" aria-pressed="true" title="Naviguer dans le graphique">Curseur</button>
           <button class="chip" data-tool="h" aria-pressed="false" title="Clique une fois sur le graphique">Ligne horizontale</button>
@@ -118,8 +121,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
         </span>
         <button class="chip" id="undo">Annuler le dernier trait</button>
         <button class="chip" id="clearDraw">Effacer mes traits</button>
-        <span class="sep"></span>
-        <button class="chip" id="viewTv" aria-pressed="false" title="Le graphique TradingView a tous ses outils mais Claude ne peut pas y dessiner">Vue TradingView</button>
+        <button class="chip" id="viewTv">Voir mes trades et les tracés de Claude</button>
       </div>
       <h2 id="tChart" hidden>Graphique</h2>
       <div class="chartwrap">
@@ -133,10 +135,11 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
       <aside class="indpanel" aria-labelledby="tInd">
         <h2 id="tInd">Indicateurs</h2>
         <div id="indList"></div>
-        <p class="small">Les indicateurs du bas s'affichent sous le graphique. Claude les calcule tous à chaque analyse, même ceux qui sont masqués.</p>
+        <p class="small">Coche un indicateur pour l'afficher sur le graphique. Sur la vue TradingView, tu peux aussi les régler avec le bouton « Indicateurs » en haut du graphique. Claude les calcule tous à chaque analyse.</p>
+        <p class="small" id="indStatus"></p>
       </aside>
       </div>
-      <div class="legend">
+      <div class="legend" id="legend">
         <span><i style="background:var(--entry)"></i>Entrée</span>
         <span><i style="background:var(--loss)"></i>Stop loss</span>
         <span><i style="background:var(--gain)"></i>Take profit</span>
@@ -144,7 +147,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
         <span><i style="background:var(--warn)"></i>Tes traits</span>
         <span><i style="background:var(--claude)"></i>Tracés de Claude</span>
       </div>
-      <p class="small">Tu peux faire glisser les lignes SL et TP d'une position directement sur le graphique pour les déplacer.</p>
+      <p class="small" id="dragNote">Tu peux faire glisser les lignes SL et TP d'une position directement sur le graphique pour les déplacer.</p>
     </section>
 
     <section aria-labelledby="tOrder">
