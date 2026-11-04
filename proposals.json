@@ -1,5 +1,66 @@
 [
  {
+  "id": "BTC-1793834992418",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 80536.01,
+  "stop": 79952,
+  "target": 81704.02999999998,
+  "score": 10,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Stochastique",
+    "v": -2
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "10 méthodes sur 11 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure, Imbalance.",
+  "confidence": null,
+  "t": 1793834992418,
+  "source": "github"
+ },
+ {
   "id": "BTC-1793832526433",
   "sym": "BTC",
   "tf": "15m",
