@@ -1,0 +1,6 @@
+{
+  "name": "atelier-trading",
+  "private": true,
+  "type": "module",
+  "description": "Simulateur de trading et assistant qui tourne sur GitHub Actions"
+}

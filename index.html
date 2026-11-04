@@ -222,6 +222,13 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
       <p class="small" id="asCount"></p>
       <p class="small" id="asLog" role="status"></p>
     </div>
+    <details class="server">
+      <summary><b>Assistant 24 h/24 (même PC et téléphone éteints)</b></summary>
+      <div style="display:grid;gap:6px;margin-top:8px;max-width:75ch" class="small">
+        <p>Une copie de l'assistant tourne sur les serveurs de GitHub toutes les 5 minutes. Elle t'envoie ses propositions sur ton téléphone avec l'application gratuite <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Touche « Accepter » dans la notification : le site s'ouvre et place le trade. Ses propositions apparaissent aussi dans la liste ci-dessous.</p>
+        <p>Les réglages (marchés, unité de temps, exigence) sont dans le fichier <code>assistant-config.json</code> du dépôt.</p>
+      </div>
+    </details>
     <div id="asList" class="props"></div>
   </section>
 
