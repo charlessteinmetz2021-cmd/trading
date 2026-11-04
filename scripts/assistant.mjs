@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import * as I from "../indicators.js";
 import { scoreMarket } from "../signals.js";
+import { loadAccount, saveAccount, track, proposalActions, send } from "./suivi.mjs";
 
 const cfg = JSON.parse(readFileSync("assistant-config.json", "utf8"));
 const MARKETS = { BTC: { name: "Bitcoin", binance: "BTCUSDT", coinbase: "BTC-USD", dec: 2 }, XAU: { name: "Or", binance: "PAXGUSDT", coinbase: "PAXG-USD", dec: 2 } };
@@ -72,27 +73,49 @@ const SCHEMA = { type: "object", additionalProperties: false, required: ["take",
     confidence: { type: "integer", description: "1 à 10" }, reason: { type: "string", description: "3 phrases max : pourquoi, méthodes qui confirment, risque lié aux annonces" } } };
 
 async function notify(p) {
-  const topic = process.env.NTFY_TOPIC;
-  if (!topic) { log("NTFY_TOPIC absent : pas de notification envoyée"); return; }
   const m = MARKETS[p.sym], f = v => v.toFixed(m.dec);
-  const enc = encodeURIComponent(JSON.stringify({ id: p.id, sym: p.sym, dir: p.dir, entry: p.entry, stop: p.stop, target: p.target }));
-  const body = {
-    topic, priority: 4, tags: [p.dir === 1 ? "chart_with_upwards_trend" : "chart_with_downwards_trend"],
+  await send({
+    priority: 4, tags: [p.dir === 1 ? "chart_with_upwards_trend" : "chart_with_downwards_trend"],
     title: `${p.dir === 1 ? "Achat" : "Vente"} ${m.name} proposé`,
     message: `Entrée ${f(p.entry)} · SL ${f(p.stop)} · TP ${f(p.target)}${p.confidence ? ` · confiance ${p.confidence}/10` : ""}\n${p.reason}`,
-    actions: [
-      { action: "view", label: "Accepter", url: `${cfg.siteUrl}#accept=${enc}`, clear: true },
-      { action: "view", label: "Refuser", url: `${cfg.siteUrl}#refuse=${encodeURIComponent(p.id)}`, clear: true },
-    ],
-  };
-  const r = await fetch("https://ntfy.sh/", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
-  log("notification", r.status);
+    actions: proposalActions(p, cfg.siteUrl),
+  });
 }
 
+async function getMinutes(sym) {
+  const m = MARKETS[sym];
+  for (const host of ["https://data-api.binance.vision", "https://api.binance.com"]) {
+    try {
+      const r = await fetch(`${host}/api/v3/klines?symbol=${m.binance}&interval=1m&limit=1000`);
+      if (!r.ok) continue;
+      const rows = await r.json();
+      if (rows.length) return rows.map(k => ({ time: Math.floor(k[0] / 1000), open: +k[1], high: +k[2], low: +k[3], close: +k[4] }));
+    } catch (e) {}
+  }
+  const r = await fetch(`https://api.exchange.coinbase.com/products/${m.coinbase}/candles?granularity=60`, { headers: { "User-Agent": "atelier-trading" } });
+  return (await r.json()).map(k => ({ time: k[0], low: +k[1], high: +k[2], open: +k[3], close: +k[4] })).sort((a, b) => a.time - b.time);
+}
+
+// 1) suivre les trades acceptés depuis le téléphone
+const acc = loadAccount();
+try { await track({ acc, state, proposals, markets: MARKETS, getMinutes }); } catch (e) { log("suivi : erreur", e?.stack || e); }
+saveAccount(acc);
+const save = () => {
+  writeFileSync("proposals.json", JSON.stringify(proposals.slice(0, 50), null, 1));
+  writeFileSync("assistant-state.json", JSON.stringify(state, null, 1));
+};
+
+// 2) notification de test : un vrai prix, un vrai stop, que tu peux accepter pour essayer le suivi
 if (process.env.TEST_NOTIF === "true") {
-  await notify({ id: "test-" + Date.now(), sym: "BTC", dir: 1, entry: 100000, stop: 99000, target: 102000, confidence: null, reason: "Notification de test : si tu la vois, tout fonctionne. N'accepte pas ce faux trade." });
+  const b = await getMinutes("BTC"), last = b[b.length - 1].close;
+  const p = { id: "test-" + Date.now(), sym: "BTC", tf: "1m", dir: 1, entry: last, stop: last * 0.997, target: last * 1.006, score: 0, details: [], news: "", confidence: null, t: Date.now(), source: "github",
+    reason: "Notification de test. Tu peux toucher « Accepter » pour essayer le suivi du trade (compte fictif) : tu recevras la confirmation dans les 5 à 15 minutes." };
+  proposals.unshift(p);
+  await notify(p);
+  save();
   process.exit(0);
 }
+// 3) chercher de nouveaux trades
 for (const sym of cfg.markets) {
   const m = MARKETS[sym];
   try {
@@ -102,7 +125,7 @@ for (const sym of cfg.markets) {
     const sc = scoreMarket(b, STEP[cfg.timeframe], 0);
     const sig = `${b[b.length - 1].time}:${Math.sign(sc.score)}`;
     log(sym, "score", sc.score, sc.details.map(x => `${x.name}:${x.v}`).join(" "));
-    const pending = proposals.some(p => p.sym === sym && Date.now() - p.t < 15 * 60000);
+    const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < 15 * 60000) || acc.positions.some(p => p.sym === sym);
     if (Math.abs(sc.score) < cfg.minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
     state.lastSig[sym] = sig;
     const cc = calendarCheck();
@@ -132,5 +155,4 @@ for (const sym of cfg.markets) {
     log(sym, "proposition envoyée", JSON.stringify(p));
   } catch (e) { log(sym, "erreur", e?.message || e); }
 }
-writeFileSync("proposals.json", JSON.stringify(proposals.slice(0, 50), null, 1));
-writeFileSync("assistant-state.json", JSON.stringify(state, null, 1));
+save();

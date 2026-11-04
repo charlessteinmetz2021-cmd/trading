@@ -1077,9 +1077,10 @@ window.__atelier.scoreMarket = scoreMarket;
 window.__atelier.considerTrade = considerTrade;
 
 // ---------- propositions envoyées par l'assistant GitHub (24 h/24) ----------
+const SITE = location.protocol === "file:" ? "https://charlessteinmetz2021-cmd.github.io/trading/" : "";
 async function pullServerProposals() {
   try {
-    const r = await fetch("proposals.json?" + Date.now(), { cache: "no-store" });
+    const r = await fetch(SITE + "proposals.json?" + Date.now(), { cache: "no-store" });
     if (!r.ok) return;
     const list = await r.json();
     let added = 0;
@@ -1110,6 +1111,24 @@ async function handleHash() {
     asLog("Proposition refusée.");
   }
 }
+// ---------- compte du serveur : trades acceptés depuis la notification ----------
+let SRV = null;
+async function pullServerAccount() {
+  try { const r = await fetch(SITE + "server-account.json?" + Date.now(), { cache: "no-store" }); if (r.ok) { SRV = await r.json(); renderServer(); } } catch (e) {}
+}
+function renderServer() {
+  if (!SRV) return;
+  const box = $("srv"); box.hidden = !SRV.positions.length && !SRV.history.length;
+  const names = { BTC: "Bitcoin", XAU: "Or" };
+  let open = 0;
+  $("srvPos").innerHTML = SRV.positions.map(p => {
+    const now = price[p.sym] ?? p.last ?? p.entry, v = (now - p.entry) * p.dir * p.qty; open += v;
+    return `<div class="prop" style="border-left:4px solid ${v >= 0 ? "var(--gain)" : "var(--loss)"}"><b>${p.dir === 1 ? "Achat" : "Vente"} ${names[p.sym] || p.sym}</b> · entrée ${fmt(p.entry)} · SL ${fmt(p.stop)} · TP ${fmt(p.target)}<br>Prix ${fmt(now)} · <b style="color:${v >= 0 ? "var(--gain)" : "var(--loss)"}">${v >= 0 ? "+" : ""}${fmt(v)} $</b></div>`;
+  }).join("") || '<p class="small">Aucun trade ouvert sur le serveur.</p>';
+  $("srvSum").textContent = `Solde ${fmt(SRV.balance)} $ · en cours ${open >= 0 ? "+" : ""}${fmt(open)} $ · résultat total ${fmt(SRV.balance - SRV.start)} $ · mis à jour ${SRV.updated ? new Date(SRV.updated).toLocaleTimeString("fr-FR") : "–"}`;
+  $("srvHist").innerHTML = SRV.history.slice(0, 20).map(h => `${new Date(h.closedAt).toLocaleString("fr-FR")} · ${h.dir === 1 ? "achat" : "vente"} ${names[h.sym] || h.sym} · ${h.why} · <b style="color:${h.pnl >= 0 ? "var(--gain)" : "var(--loss)"}">${h.pnl >= 0 ? "+" : ""}${fmt(h.pnl)} $</b>`).join("<br>") || "Aucun.";
+}
+pullServerAccount(); setInterval(pullServerAccount, 60000); setInterval(renderServer, 2000);
 pullServerProposals().then(handleHash);
 setInterval(pullServerProposals, 60000);
 window.addEventListener("hashchange", handleHash);
