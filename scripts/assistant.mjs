@@ -32,6 +32,28 @@ async function fetchCandles(m, tf) {
 
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
 
+// Calendrier économique gratuit (annonces à fort impact de la semaine)
+async function calendar() {
+  try {
+    const r = await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", { headers: { "User-Agent": "atelier-trading" } });
+    const ev = await r.json();
+    return ev.filter(e => e.impact === "High" && ["USD", "ALL"].includes(e.country)).map(e => ({ title: e.title, t: Date.parse(e.date) }));
+  } catch (e) { log("calendrier indisponible", e?.message || e); return null; }
+}
+const cal = await calendar();
+const paris = t => new Date(t).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "short", hour: "2-digit", minute: "2-digit" });
+function calendarCheck() {
+  if (!cal) return { block: false, text: "Calendrier économique indisponible." };
+  const now = Date.now();
+  const near = cal.filter(e => e.t > now - 30 * 60000 && e.t < now + 60 * 60000);
+  const next = cal.filter(e => e.t > now && e.t < now + 24 * 3600000).slice(0, 4);
+  return {
+    block: near.length > 0,
+    text: near.length ? `Annonce importante trop proche : ${near.map(e => `${e.title} (${paris(e.t)})`).join(", ")}.`
+      : next.length ? `Prochaines annonces importantes (USD) : ${next.map(e => `${e.title} ${paris(e.t)}`).join(" ; ")}.` : "Aucune annonce importante dans les 24 h.",
+  };
+}
+
 async function news(name) {
   let messages = [{ role: "user", content: `Cherche les actualités et annonces des dernières 24 heures et des prochaines 24 heures qui peuvent faire bouger ${name} : calendrier économique américain (CPI, NFP, FOMC, PIB…), discours de la Fed, actualités crypto ou géopolitiques. Réponds en 4 lignes maximum en français : les événements importants avec leur heure (heure de Paris), et le risque (faible, moyen, élevé) pour un trade intraday maintenant.` }];
   for (let i = 0; i < 3; i++) {
@@ -79,13 +101,15 @@ for (const sym of cfg.markets) {
     const pending = proposals.some(p => p.sym === sym && Date.now() - p.t < 15 * 60000);
     if (Math.abs(sc.score) < cfg.minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
     state.lastSig[sym] = sig;
+    const cc = calendarCheck();
+    if (cc.block) { log(sym, "signal ignoré :", cc.text); continue; }
     const dir = sc.score > 0 ? 1 : -1;
     let stop = dir === 1 ? Math.min(sc.px - 1.5 * sc.atr, sc.pl ?? Infinity) : Math.max(sc.px + 1.5 * sc.atr, sc.ph ?? -Infinity);
     if (!isFinite(stop) || Math.abs(sc.px - stop) > 4 * sc.atr) stop = sc.px - dir * 1.5 * sc.atr;
     let p = { id: `${sym}-${Date.now()}`, sym, tf: cfg.timeframe, dir, entry: sc.px, stop, target: sc.px + dir * 2 * Math.abs(sc.px - stop), score: sc.score,
-      details: sc.details.map(x => ({ name: x.name, v: x.v })), news: "", reason: "Proposition calculée par le script seul (pas de clé API).", confidence: null, t: Date.now(), source: "github" };
+      details: sc.details.map(x => ({ name: x.name, v: x.v })), news: cc.text, reason: `${sc.details.filter(x => Math.sign(x.v) === Math.sign(sc.score)).length} méthodes sur ${sc.details.length} vont dans le même sens : ${sc.details.filter(x => Math.sign(x.v) === Math.sign(sc.score)).map(x => x.name).join(", ")}.`, confidence: null, t: Date.now(), source: "github" };
     if (client) {
-      const n = cfg.checkNews ? await news(m.name) : "";
+      const n = (cfg.checkNews ? await news(m.name) : "") + " " + cc.text;
       const bars = b.slice(-80).map(x => `${x.open},${x.high},${x.low},${x.close}`).join("\n");
       const resp = await client.beta.messages.create({
         model: "claude-opus-5-5", max_tokens: 6000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
@@ -96,7 +120,7 @@ for (const sym of cfg.markets) {
       if (resp.stop_reason === "refusal") { log(sym, "refus"); continue; }
       const dec = JSON.parse(resp.content.find(x => x.type === "text").text);
       if (!dec.take) { log(sym, "écarté par Claude :", dec.reason); continue; }
-      p = { ...p, dir: dec.direction === "achat" ? 1 : -1, entry: dec.entry, stop: dec.stop, target: dec.target, reason: dec.reason, confidence: dec.confidence, news: n };
+      p = { ...p, dir: dec.direction === "achat" ? 1 : -1, entry: dec.entry, stop: dec.stop, target: dec.target, reason: dec.reason, confidence: dec.confidence, news: n.trim() };
     }
     if ((p.stop - p.entry) * p.dir >= 0 || (p.target - p.entry) * p.dir <= 0) { log(sym, "niveaux incohérents, ignoré"); continue; }
     proposals.unshift(p); state.count++;
