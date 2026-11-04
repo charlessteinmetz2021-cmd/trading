@@ -1,7 +1,8 @@
 {
  "start": 10000,
- "balance": 10000,
- "positions": [
+ "balance": 10183.50237053259,
+ "positions": [],
+ "history": [
   {
    "id": "test-1793828718835",
    "sym": "BTC",
@@ -12,12 +13,14 @@
    "target": 80675.17405999999,
    "lev": 10,
    "openedAt": 1793828700000,
-   "checkedTo": 1793829600,
+   "checkedTo": 1793831400,
    "lastPnlNotif": 1793828825661,
    "last": 80249.72,
-   "pnl": 16.383717263942618
+   "pnl": 183.50237053258874,
+   "exit": 80675.17405999999,
+   "why": "take profit",
+   "closedAt": 1793831460000
   }
  ],
- "history": [],
- "updated": 1793829634291
+ "updated": 1793832525112
 }
