@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+    inputs:
+      test:
+        description: "Envoyer une notification de test"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -26,6 +31,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TEST_NOTIF: ${{ inputs.test }}
         run: node scripts/assistant.mjs
       - name: Enregistre les propositions
         run: |

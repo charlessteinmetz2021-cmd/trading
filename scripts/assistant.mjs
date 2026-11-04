@@ -89,6 +89,10 @@ async function notify(p) {
   log("notification", r.status);
 }
 
+if (process.env.TEST_NOTIF === "true") {
+  await notify({ id: "test-" + Date.now(), sym: "BTC", dir: 1, entry: 100000, stop: 99000, target: 102000, confidence: null, reason: "Notification de test : si tu la vois, tout fonctionne. N'accepte pas ce faux trade." });
+  process.exit(0);
+}
 for (const sym of cfg.markets) {
   const m = MARKETS[sym];
   try {
