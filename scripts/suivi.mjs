@@ -18,12 +18,17 @@ const money = v => (v >= 0 ? "+" : "−") + Math.abs(v).toLocaleString("fr-FR", 
 const px = v => v.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pnlOf = (p, price) => (price - p.entry) * p.dir * p.qty;
 
-// Boutons à mettre sur une notification de proposition
+// Boutons à mettre sur une notification de proposition.
+// Ils publient sur ton propre sujet : tu vois tout de suite « Reçu », et le serveur lit l'ordre entre crochets.
+const NAMES = { BTC: "Bitcoin", XAU: "or" };
+const order = (act, id, text) => ({ action: "http", label: act === "accept" ? "Accepter" : act === "refuse" ? "Refuser" : "Fermer le trade",
+  url: `https://ntfy.sh/${process.env.NTFY_TOPIC}`, method: "POST", headers: { Tags: act === "refuse" ? "no_entry_sign" : "white_check_mark", Priority: "3" },
+  body: `${text} [${act}:${id}]`, clear: true });
 export function proposalActions(p, siteUrl) {
-  const t = ctlTopic(), data = { id: p.id, sym: p.sym, dir: p.dir, entry: p.entry, stop: p.stop, target: p.target };
+  const what = `${p.dir === 1 ? "l'achat" : "la vente"} ${NAMES[p.sym] || p.sym}`;
   return [
-    { action: "http", label: "Accepter", url: `https://ntfy.sh/${t}`, method: "POST", body: JSON.stringify({ act: "accept", ...data }), clear: true },
-    { action: "http", label: "Refuser", url: `https://ntfy.sh/${t}`, method: "POST", body: JSON.stringify({ act: "refuse", id: p.id }), clear: true },
+    order("accept", p.id, `✅ Reçu ! J'ouvre ${what} dans 5 à 15 minutes et je te préviens.`),
+    order("refuse", p.id, `Proposition refusée, je ne prends pas ${what}.`),
     { action: "view", label: "Voir le site", url: siteUrl },
   ];
 }
@@ -35,20 +40,31 @@ export async function send(msg) {
   log("notification", msg.title, r.status);
 }
 
-// Messages envoyés par les boutons depuis le dernier passage
-async function readControl(state) {
-  const t = ctlTopic(); if (!t) return [];
-  const since = state.ctlSince || "12h";
+// Ordres envoyés par les boutons depuis le dernier passage
+async function poll(topic, key, state) {
   try {
-    const r = await fetch(`https://ntfy.sh/${t}/json?poll=1&since=${since}`);
-    if (!r.ok) { log("lecture du contrôle", r.status); return []; }
+    const r = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=${state[key] || "12h"}`);
+    if (!r.ok) { log("lecture", key, r.status); return []; }
     const msgs = (await r.text()).split("\n").filter(Boolean).map(l => JSON.parse(l)).filter(m => m.event === "message");
-    if (msgs.length) state.ctlSince = msgs[msgs.length - 1].id;
-    return msgs.map(m => { try { return { ...JSON.parse(m.message), at: m.time * 1000 }; } catch (e) { return null; } }).filter(Boolean);
-  } catch (e) { log("lecture du contrôle impossible", e?.message || e); return []; }
+    if (msgs.length) state[key] = msgs[msgs.length - 1].id;
+    return msgs;
+  } catch (e) { log("lecture impossible", key, e?.message || e); return []; }
+}
+async function readControl(state, proposals) {
+  const t = process.env.NTFY_TOPIC; if (!t) return [];
+  const out = [];
+  for (const m of await poll(t, "mainSince", state)) { // nouveaux boutons
+    const g = /\[(accept|refuse|close):([^\]]+)\]/.exec(m.message || ""); if (!g) continue;
+    const p = proposals.find(x => x.id === g[2]) || {};
+    out.push({ ...p, act: g[1], id: g[2], at: m.time * 1000 });
+  }
+  for (const m of await poll(t + "-ctl", "ctlSince", state)) { // anciens boutons
+    try { out.push({ ...JSON.parse(m.message), at: m.time * 1000 }); } catch (e) {}
+  }
+  return out.sort((a, b) => a.at - b.at);
 }
 
-const closeActions = id => [{ action: "http", label: "Fermer le trade", url: `https://ntfy.sh/${ctlTopic()}`, method: "POST", body: JSON.stringify({ act: "close", id }), clear: false }];
+const closeActions = id => [{ ...order("close", id, "Reçu, je ferme le trade dans 5 à 15 minutes."), clear: false }];
 
 function close(acc, p, price, why, at) {
   const pnl = pnlOf(p, price);
@@ -62,7 +78,7 @@ function close(acc, p, price, why, at) {
 // getMinutes(sym, sinceSec) → bougies 1 min [{time, open, high, low, close}]
 export async function track({ acc, state, proposals, markets, getMinutes }) {
   const now = Date.now();
-  const cmds = await readControl(state);
+  const cmds = await readControl(state, proposals);
   const cache = {};
   const minutes = async sym => (cache[sym] ||= await getMinutes(sym));
 
@@ -80,7 +96,7 @@ export async function track({ acc, state, proposals, markets, getMinutes }) {
     }
     if (c.act !== "accept") continue;
     if (acc.positions.some(x => x.id === c.id) || acc.history.some(x => x.id === c.id)) continue;
-    const m = markets[c.sym]; if (!m) continue;
+    const m = markets[c.sym]; if (!m || !c.dir || !c.stop || !c.target) { log("ordre sans proposition", c.id); continue; }
     const prop = proposals.find(x => x.id === c.id) || c;
     const b = await minutes(c.sym);
     // prix au moment où tu as touché « Accepter »
