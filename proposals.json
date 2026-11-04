@@ -13,7 +13,8 @@
   "confidence": null,
   "t": 1793828718835,
   "source": "github",
-  "reason": "Notification de test. Tu peux toucher « Accepter » pour essayer le suivi du trade (compte fictif) : tu recevras la confirmation dans les 5 à 15 minutes."
+  "reason": "Notification de test. Tu peux toucher « Accepter » pour essayer le suivi du trade (compte fictif) : tu recevras la confirmation dans les 5 à 15 minutes.",
+  "status": "accepted"
  },
  {
   "id": "BTC-1793827075862",
