@@ -61,6 +61,18 @@ h2{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu
 .tvmode .topleft{top:auto;bottom:44px;left:56px}
 .indlegend{display:flex;flex-wrap:wrap;gap:4px 10px;max-width:70%;font-family:var(--mono);font-size:.72rem;background:color-mix(in srgb,var(--panel) 85%,transparent);border-radius:6px;padding:3px 8px;pointer-events:none}
 .indlegend i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
+.assist h2{color:var(--accent)}
+.asgrid{display:grid;gap:10px}
+.switch{display:flex;gap:6px;align-items:center;color:var(--fg);font-size:.85rem;cursor:pointer}
+.switch input{width:auto;accent-color:var(--accent)}
+.props{display:grid;gap:10px}
+.prop{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px}
+.prop.pending{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn)}
+.prop.accepted{opacity:.85} .prop.refused,.prop.expired{opacity:.55}
+.prop p{margin:0}
+.prop-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.pill{font-size:.74rem;border:1px solid var(--line);border-radius:99px;padding:0 8px;color:var(--muted)}
+.go1{font:inherit;font-weight:600;padding:8px 18px;border:0;border-radius:6px;color:#fff;cursor:pointer}
 .hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:5;background:var(--fg);color:var(--panel);font-size:.8rem;padding:4px 12px;border-radius:99px}
 .quick{position:absolute;top:8px;right:70px;z-index:5;display:flex;gap:4px}
 .quick button{font:inherit;font-weight:600;font-size:.8rem;padding:5px 12px;border:0;border-radius:6px;color:#fff;cursor:pointer}
@@ -188,6 +200,30 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
       <div class="row"><span>Marge utilisée</span><span id="aMargin">–</span></div>
     </section>
   </div>
+
+  <section class="assist" aria-labelledby="tAssist">
+    <div class="bar" style="justify-content:space-between">
+      <h2 id="tAssist">Assistant automatique</h2>
+      <label class="switch"><input type="checkbox" id="asOn"><span>Activer l'assistant</span></label>
+    </div>
+    <p class="small">L'assistant analyse les marchés choisis toutes les minutes avec toutes les méthodes du site : tendance, moyennes mobiles, Ichimoku, MACD, RSI, stochastique, Bollinger, Supertrend, SAR, VWAP, structure et imbalances. Quand plusieurs méthodes concordent, Claude vérifie les annonces du marché et le graphique, puis t'envoie une notification. Tu acceptes ou tu refuses : rien n'est pris sans toi. Les trades acceptés sont simulés, avec 1 % de risque.</p>
+    <div class="asgrid">
+      <div class="fields" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div><span class="small">Marchés surveillés</span><div class="bar"><label class="switch"><input type="checkbox" data-asm="BTC"><span>Bitcoin</span></label><label class="switch"><input type="checkbox" data-asm="XAU"><span>Or</span></label></div></div>
+        <label>Unité de temps analysée<select id="asTf"><option value="5m">5 min</option><option value="15m">15 min</option><option value="1h">1 h</option><option value="4h">4 h</option></select></label>
+        <label>Exigence du signal <span id="asScoreV"></span><input type="range" id="asScore" min="3" max="14" step="1"></label>
+        <label>Propositions max par jour<input type="number" id="asMax" min="1" max="50"></label>
+      </div>
+      <div class="bar">
+        <label class="switch"><input type="checkbox" id="asNews"><span>Vérifier les annonces du marché (recherche web par Claude)</span></label>
+        <button class="chip" id="asNotif">Autoriser les notifications</button>
+      </div>
+      <p class="small" id="asState"></p>
+      <p class="small" id="asCount"></p>
+      <p class="small" id="asLog" role="status"></p>
+    </div>
+    <div id="asList" class="props"></div>
+  </section>
 
   <section class="claude" aria-labelledby="tClaude">
     <h2 id="tClaude">Analyse de Claude</h2>

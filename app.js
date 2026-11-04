@@ -909,3 +909,207 @@ makeChart(); renderIndList(); refreshView(); connect();
 
 // accès pour les tests
 window.__atelier = { onPrice, price, S: () => S, candleData: () => candleData, showAnalysis, setCandles: rows => { candleData = rows; candles.setData(rows); renderDrawings(); renderPosLines(); renderIndicators(); }, indicatorSnapshot };
+
+// =====================================================================
+// Assistant automatique : surveille les marchés, propose des trades, tu acceptes ou refuses
+// =====================================================================
+const AS_KEY = "atelier-assistant-v1";
+let AS = { on: false, markets: ["BTC", "XAU"], tf: "15m", minScore: 6, maxPerDay: 8, news: true, day: "", count: 0, proposals: [], lastSig: {} };
+try { AS = { ...AS, ...JSON.parse(localStorage.getItem(AS_KEY)) }; } catch (e) {}
+const saveAS = () => { try { localStorage.setItem(AS_KEY, JSON.stringify(AS)); } catch (e) {} };
+
+// Toutes les méthodes notées de -2 à +2 ; le total donne la force du signal (positif = achat, négatif = vente)
+function scoreMarket(b) {
+  const c = b.map(x => x.close), n = b.length - 1, px = c[n], L = a => a[a.length - 1], P = a => a[a.length - 2];
+  const out = [];
+  const add = (name, v, why) => { if (v) out.push({ name, v, why }); };
+  const s50 = I.sma(c, 50), s200 = I.sma(c, 200), e9 = I.ema(c, 9), e21 = I.ema(c, 21);
+  add("Tendance (MM 50/200)", L(s50) && L(s200) ? (L(s50) > L(s200) ? 1 : -1) : 0, L(s50) > L(s200) ? "MM50 au-dessus de la MM200" : "MM50 sous la MM200");
+  add("EMA 9/21", L(e9) > L(e21) && P(e9) <= P(e21) ? 2 : L(e9) < L(e21) && P(e9) >= P(e21) ? -2 : L(e9) > L(e21) ? 1 : -1, "croisement ou position des EMA 9 et 21");
+  const ic = I.ichimoku(b, STEP[AS.tf] || 900), sa = ic.spanA[n - 26]?.value, sb = ic.spanB[n - 26]?.value;
+  if (sa != null && sb != null) add("Ichimoku", px > Math.max(sa, sb) && L(ic.tenkan) > L(ic.kijun) ? 2 : px < Math.min(sa, sb) && L(ic.tenkan) < L(ic.kijun) ? -2 : px > Math.max(sa, sb) ? 1 : px < Math.min(sa, sb) ? -1 : 0, "prix par rapport au nuage et tenkan/kijun");
+  const m = I.macd(c);
+  add("MACD", L(m.hist) > 0 && P(m.hist) <= 0 ? 2 : L(m.hist) < 0 && P(m.hist) >= 0 ? -2 : L(m.hist) > 0 ? 1 : -1, "histogramme MACD");
+  const r = I.rsi(c), rv = L(r);
+  add("RSI", rv < 30 ? 1 : rv > 70 ? -1 : rv > 55 ? 1 : rv < 45 ? -1 : 0, `RSI ${rv?.toFixed(0)}`);
+  const st = I.stoch(b);
+  add("Stochastique", L(st.k) > L(st.d) && P(st.k) <= P(st.d) && L(st.k) < 30 ? 2 : L(st.k) < L(st.d) && P(st.k) >= P(st.d) && L(st.k) > 70 ? -2 : 0, "croisement %K/%D en zone extrême");
+  const bb = I.bollinger(c);
+  add("Bollinger", px < L(bb.lo) ? 1 : px > L(bb.up) ? -1 : 0, "prix hors des bandes (retour probable)");
+  const sp = I.supertrend(b);
+  add("Supertrend", L(sp.dir) !== P(sp.dir) ? 2 * L(sp.dir) : L(sp.dir), "direction du Supertrend");
+  const sar = I.psar(b);
+  add("Parabolic SAR", px > L(sar) ? 1 : -1, "position du SAR");
+  const vw = I.vwap(b, TZ);
+  add("VWAP", px > L(vw) ? 1 : -1, "prix par rapport au VWAP");
+  // structure : cassure du dernier plus haut / plus bas
+  const k = 5; let ph = null, pl = null;
+  for (let i = n - k - 1; i > k && (ph == null || pl == null); i--) {
+    const w = b.slice(i - k, i + k + 1);
+    if (ph == null && b[i].high === Math.max(...w.map(x => x.high))) ph = b[i].high;
+    if (pl == null && b[i].low === Math.min(...w.map(x => x.low))) pl = b[i].low;
+  }
+  add("Structure", ph && px > ph ? 2 : pl && px < pl ? -2 : 0, "cassure du dernier plus haut / plus bas");
+  // imbalance : prix qui revient dans une FVG non comblée
+  for (let i = n - 1; i > n - 60 && i > 2; i--) {
+    if (b[i].low > b[i - 2].high && px <= b[i].low && px >= b[i - 2].high) { add("Imbalance", 1, "retour dans une FVG haussière"); break; }
+    if (b[i].high < b[i - 2].low && px >= b[i].high && px <= b[i - 2].low) { add("Imbalance", -1, "retour dans une FVG baissière"); break; }
+  }
+  const atrv = L(I.atr(b));
+  return { score: out.reduce((a, x) => a + x.v, 0), details: out, atr: atrv, ph, pl, px };
+}
+
+async function askClaudeNews(client, sym) {
+  const name = sym === "BTC" ? "Bitcoin (BTC)" : "l'or (XAU/USD)";
+  let messages = [{ role: "user", content: `Cherche les actualités et annonces des dernières 24 heures et des prochaines 24 heures qui peuvent faire bouger ${name} : calendrier économique américain (CPI, NFP, FOMC, PIB…), discours de la Fed, actualités crypto ou géopolitiques. Réponds en 4 lignes maximum en français : les événements importants avec leur heure (heure de Paris), et ton avis sur le risque (faible, moyen, élevé) pour un trade intraday maintenant.` }];
+  for (let i = 0; i < 3; i++) {
+    const resp = await client.beta.messages.create({
+      model: "claude-opus-5-5", max_tokens: 4000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
+      output_config: { effort: "low" },
+      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 3 }],
+      messages,
+    });
+    if (resp.stop_reason === "pause_turn") { messages = [...messages, { role: "assistant", content: resp.content }]; continue; }
+    return resp.content.filter(x => x.type === "text").map(x => x.text).join(" ").trim() || "Pas d'information trouvée.";
+  }
+  return "Recherche d'actualités incomplète.";
+}
+
+const DECISION_SCHEMA = { type: "object", additionalProperties: false, required: ["take", "direction", "entry", "stop", "target", "confidence", "reason"],
+  properties: { take: { type: "boolean" }, direction: { type: "string", enum: ["achat", "vente"] }, entry: { type: "number" }, stop: { type: "number" }, target: { type: "number" },
+    confidence: { type: "integer", description: "1 à 10" }, reason: { type: "string", description: "3 phrases max : pourquoi, méthodes qui confirment, risque lié aux annonces" } } };
+
+async function considerTrade(sym, frame, b, sc) {
+  const client = await claudeClient().catch(() => null);
+  const dir = sc.score > 0 ? 1 : -1, d = MARKETS[sym].dec;
+  // proposition de base calculée par le site (stop à 1,5 ATR ou derrière le dernier creux / sommet, objectif à 2 R)
+  let stop = dir === 1 ? Math.min(sc.px - 1.5 * sc.atr, sc.pl ?? Infinity) : Math.max(sc.px + 1.5 * sc.atr, sc.ph ?? -Infinity);
+  if (!isFinite(stop) || Math.abs(sc.px - stop) > 4 * sc.atr) stop = sc.px - dir * 1.5 * sc.atr;
+  let prop = { id: Date.now(), sym, tf: frame, dir, entry: sc.px, stop, target: sc.px + dir * 2 * Math.abs(sc.px - stop), score: sc.score, details: sc.details, news: "", reason: "", confidence: null, status: "pending", t: Date.now() };
+  if (client) {
+    try {
+      const news = AS.news ? await askClaudeNews(client, sym) : "Vérification des annonces désactivée.";
+      prop.news = news;
+      const bars = b.slice(-80).map(x => `${x.open.toFixed(d)},${x.high.toFixed(d)},${x.low.toFixed(d)},${x.close.toFixed(d)}`).join("\n");
+      const resp = await client.beta.messages.create({
+        model: "claude-opus-5-5", max_tokens: 6000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
+        output_config: { effort: "medium", format: { type: "json_schema", schema: DECISION_SCHEMA } },
+        system: "Tu es un trader discipliné qui prépare des propositions de trade pour une personne qui s'entraîne sur un simulateur. Tu ne proposes un trade (take = true) que si plusieurs méthodes concordent, que le ratio risque/rendement est d'au moins 1,5 et qu'aucune annonce majeure n'arrive dans l'heure. Sinon take = false. Les prix doivent être cohérents avec les bougies.",
+        messages: [{ role: "user", content: `Marché ${MARKETS[sym].name}, unité ${frame}, prix ${sc.px}.
+Signal calculé par le site : ${dir === 1 ? "achat" : "vente"}, score ${sc.score} (de -24 à +24).
+Détail des méthodes : ${sc.details.map(x => `${x.name} ${x.v > 0 ? "+" : ""}${x.v} (${x.why})`).join(" ; ")}.
+Proposition de base : entrée ${sc.px.toFixed(d)}, stop ${stop.toFixed(d)}, objectif ${prop.target.toFixed(d)}. ATR ${sc.atr.toFixed(d)}.
+Annonces du marché : ${news}
+80 dernières bougies (ouverture,haut,bas,clôture) :
+${bars}` }],
+      });
+      const text = resp.content.find(x => x.type === "text")?.text;
+      const dec = JSON.parse(text);
+      if (!dec.take) { asLog(`${MARKETS[sym].name} : Claude a écarté un signal (${dec.reason})`); return; }
+      prop = { ...prop, dir: dec.direction === "achat" ? 1 : -1, entry: dec.entry, stop: dec.stop, target: dec.target, reason: dec.reason, confidence: dec.confidence };
+    } catch (e) { prop.reason = "Claude n'a pas pu valider ce signal (" + (e?.status === 401 ? "clé refusée" : e?.message || e) + "). Proposition calculée par le site seul."; }
+  } else prop.reason = "Proposition calculée par le site seul. Ajoute ta clé API pour que Claude la vérifie et regarde les annonces.";
+  if ((prop.stop - prop.entry) * prop.dir >= 0 || (prop.target - prop.entry) * prop.dir <= 0) return;
+  AS.proposals.unshift(prop); AS.proposals = AS.proposals.slice(0, 30); AS.count++; saveAS();
+  renderProposals(); notify(prop);
+}
+
+function notify(p) {
+  const m = MARKETS[p.sym], d = m.dec;
+  const body = `${p.dir === 1 ? "Achat" : "Vente"} ${m.name} à ${fmt(p.entry, d)} · SL ${fmt(p.stop, d)} · TP ${fmt(p.target, d)}${p.confidence ? ` · confiance ${p.confidence}/10` : ""}`;
+  try {
+    if ("Notification" in window && Notification.permission === "granted") {
+      const n = new Notification("Nouveau trade proposé", { body, tag: "atelier-" + p.id, requireInteraction: true });
+      n.onclick = () => { window.focus(); $("tAssist").scrollIntoView({ behavior: "smooth" }); n.close(); };
+    }
+  } catch (e) {}
+  try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 880; g.gain.value = 0.08; o.start(); o.stop(ac.currentTime + 0.25); } catch (e) {}
+  document.title = "🔔 Trade proposé · Atelier de trading";
+  $("toast").hidden = false; $("toast").className = "toast";
+  $("toast").innerHTML = `<b>Trade proposé :</b> ${body} <button id="toastGo">Voir</button>`;
+  $("toastGo").onclick = () => { $("toast").hidden = true; $("tAssist").scrollIntoView({ behavior: "smooth" }); };
+}
+
+function acceptProposal(p) {
+  const px = price[p.sym];
+  if (px == null) return asLog("Prix indisponible, impossible d'exécuter.");
+  if ((p.stop - px) * p.dir >= 0) { p.status = "expired"; saveAS(); renderProposals(); return asLog("Le prix a déjà dépassé le stop : proposition expirée."); }
+  const qty = +((equity() * 0.01) / Math.abs(px - p.stop)).toPrecision(4), lev = 10;
+  if ((px * qty) / lev > freeMargin()) return asLog("Marge insuffisante pour ce trade.");
+  openPos(p.sym, p.dir, qty, px, lev, +p.stop.toFixed(MARKETS[p.sym].dec), +p.target.toFixed(MARKETS[p.sym].dec));
+  p.status = "accepted"; saveAS(); renderProposals();
+  asLog(`Trade accepté : ${p.dir === 1 ? "achat" : "vente"} ${qty} ${MARKETS[p.sym].name} à ${fmt(px, MARKETS[p.sym].dec)} (risque 1 %).`);
+  document.title = "Atelier de trading";
+}
+
+function renderProposals() {
+  const el = $("asList"); if (!el) return;
+  const today = new Date().toDateString();
+  if (AS.day !== today) { AS.day = today; AS.count = 0; saveAS(); }
+  $("asCount").textContent = `${AS.count} / ${AS.maxPerDay} propositions aujourd'hui`;
+  const esc = x => String(x ?? "").replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
+  // une proposition en attente expire après 15 minutes
+  for (const p of AS.proposals) if (p.status === "pending" && Date.now() - p.t > 15 * 60000) p.status = "expired";
+  el.innerHTML = AS.proposals.length ? AS.proposals.slice(0, 10).map(p => {
+    const m = MARKETS[p.sym], d = m.dec, rr = Math.abs(p.target - p.entry) / Math.abs(p.entry - p.stop);
+    const st = { pending: "En attente", accepted: "Accepté", refused: "Refusé", expired: "Expiré" }[p.status];
+    return `<div class="prop ${p.status}">
+      <div class="prop-head"><b class="${p.dir === 1 ? "gain" : "loss"}">${p.dir === 1 ? "Achat" : "Vente"} ${m.name}</b><span>${p.tf} · ${new Date(p.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span><span class="pill">${st}</span></div>
+      <div class="idea"><span>Entrée ${fmt(p.entry, d)}</span><span class="loss">SL ${fmt(p.stop, d)}</span><span class="gain">TP ${fmt(p.target, d)}</span><span>R/R 1 : ${fmt(rr, 2)}</span><span>Score ${p.score > 0 ? "+" : ""}${p.score}</span>${p.confidence ? `<span>Confiance ${p.confidence}/10</span>` : ""}</div>
+      ${p.reason ? `<p>${esc(p.reason)}</p>` : ""}
+      ${p.news ? `<p class="small"><b>Annonces :</b> ${esc(p.news)}</p>` : ""}
+      <details><summary>Méthodes utilisées</summary><p class="small">${p.details.map(x => `${esc(x.name)} ${x.v > 0 ? "+" : ""}${x.v}`).join(" · ")}</p></details>
+      ${p.status === "pending" ? `<div class="bar"><button class="buy go1" data-acc="${p.id}">Accepter</button><button class="sell go1" data-ref="${p.id}">Refuser</button></div>` : ""}
+    </div>`;
+  }).join("") : '<p class="small">Aucune proposition pour l\'instant. Active l\'assistant : il analyse les marchés toutes les minutes et te prévient dès qu\'un trade se présente.</p>';
+  el.querySelectorAll("[data-acc]").forEach(bt => bt.onclick = () => acceptProposal(AS.proposals.find(p => p.id == bt.dataset.acc)));
+  el.querySelectorAll("[data-ref]").forEach(bt => bt.onclick = () => { const p = AS.proposals.find(x => x.id == bt.dataset.ref); p.status = "refused"; saveAS(); renderProposals(); document.title = "Atelier de trading"; });
+}
+function asLog(t) { const el = $("asLog"); if (el) el.textContent = new Date().toLocaleTimeString("fr-FR") + " · " + t; }
+
+let asBusy = false;
+async function scan() {
+  if (!AS.on || asBusy) return;
+  asBusy = true;
+  try {
+    renderProposals();
+    for (const sym of AS.markets) {
+      const res = await fetchCandles(MARKETS[sym].feed, AS.tf);
+      if (!res || res.rows.length < 210) { asLog(`${MARKETS[sym].name} : pas assez de données pour analyser.`); continue; }
+      const b = res.rows.slice(0, -1); // seulement les bougies clôturées
+      const sc = scoreMarket(b);
+      const sig = `${b[b.length - 1].time}:${Math.sign(sc.score)}`;
+      asLog(`${MARKETS[sym].name} analysé : score ${sc.score > 0 ? "+" : ""}${sc.score} (seuil ±${AS.minScore}).`);
+      const pending = AS.proposals.some(p => p.sym === sym && p.status === "pending");
+      const inPos = S.positions.some(p => p.sym === sym);
+      if (Math.abs(sc.score) >= AS.minScore && AS.lastSig[sym] !== sig && !pending && !inPos && AS.count < AS.maxPerDay) {
+        AS.lastSig[sym] = sig; saveAS();
+        asLog(`${MARKETS[sym].name} : signal fort (${sc.score}), Claude vérifie les annonces et le graphique…`);
+        await considerTrade(sym, AS.tf, b, sc);
+      }
+    }
+  } finally { asBusy = false; }
+}
+setInterval(scan, 60000);
+
+function setupAssistant() {
+  $("asOn").checked = AS.on; $("asTf").value = AS.tf; $("asScore").value = AS.minScore; $("asMax").value = AS.maxPerDay; $("asNews").checked = AS.news;
+  document.querySelectorAll("[data-asm]").forEach(cb => { cb.checked = AS.markets.includes(cb.dataset.asm); cb.onchange = () => { AS.markets = [...document.querySelectorAll("[data-asm]:checked")].map(x => x.dataset.asm); saveAS(); }; });
+  $("asOn").onchange = () => { AS.on = $("asOn").checked; saveAS(); $("asState").textContent = AS.on ? "Assistant actif : il analyse toutes les minutes tant que cette page reste ouverte." : "Assistant en pause."; if (AS.on) scan(); };
+  $("asTf").onchange = () => { AS.tf = $("asTf").value; AS.lastSig = {}; saveAS(); };
+  $("asScore").oninput = () => { AS.minScore = +$("asScore").value; $("asScoreV").textContent = "±" + AS.minScore; saveAS(); };
+  $("asMax").onchange = () => { AS.maxPerDay = +$("asMax").value || 8; saveAS(); renderProposals(); };
+  $("asNews").onchange = () => { AS.news = $("asNews").checked; saveAS(); };
+  $("asNotif").onclick = async () => {
+    if (!("Notification" in window)) { asLog("Ce navigateur ne gère pas les notifications. Le site sonnera et affichera la proposition à l'écran."); return; }
+    const r = await Notification.requestPermission();
+    asLog(r === "granted" ? "Notifications activées." : "Notifications refusées : le site sonnera et affichera la proposition à l'écran.");
+  };
+  $("asScoreV").textContent = "±" + AS.minScore;
+  $("asState").textContent = AS.on ? "Assistant actif : il analyse toutes les minutes tant que cette page reste ouverte." : "Assistant en pause.";
+  renderProposals();
+  if (AS.on) setTimeout(scan, 3000);
+}
+setupAssistant();
+window.__atelier.scoreMarket = scoreMarket;
+window.__atelier.considerTrade = considerTrade;
