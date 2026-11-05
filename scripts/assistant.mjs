@@ -2,6 +2,7 @@
 // Analyse les marchés, demande à Claude de vérifier les annonces et le graphique,
 // enregistre la proposition dans proposals.json et envoie une notification ntfy.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 import Anthropic from "@anthropic-ai/sdk";
 import * as I from "../indicators.js";
 import { scoreMarket } from "../signals.js";
@@ -13,8 +14,6 @@ const STEP = { "5m": 300, "15m": 900, "1h": 3600, "4h": 14400 };
 const CB_GRAN = { "5m": 300, "15m": 900, "1h": 3600, "4h": 21600 };
 const state = existsSync("assistant-state.json") ? JSON.parse(readFileSync("assistant-state.json", "utf8")) : { day: "", count: 0, lastSig: {} };
 const proposals = existsSync("proposals.json") ? JSON.parse(readFileSync("proposals.json", "utf8")) : [];
-const today = new Date().toISOString().slice(0, 10);
-if (state.day !== today) { state.day = today; state.count = 0; }
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
 // Nasdaq : contrat à terme NQ (Yahoo Finance, gratuit, sans clé)
@@ -112,8 +111,8 @@ async function getMinutes(sym) {
 
 // 1) suivre les trades acceptés depuis le téléphone
 const acc = loadAccount();
-try { await track({ acc, state, proposals, markets: MARKETS, getMinutes }); } catch (e) { log("suivi : erreur", e?.stack || e); }
-saveAccount(acc);
+const follow = async () => { try { await track({ acc, state, proposals, markets: MARKETS, getMinutes }); } catch (e) { log("suivi : erreur", e?.stack || e); } saveAccount(acc); };
+await follow();
 const save = () => {
   writeFileSync("proposals.json", JSON.stringify(proposals.slice(0, 50), null, 1));
   writeFileSync("assistant-state.json", JSON.stringify(state, null, 1));
@@ -123,14 +122,15 @@ const save = () => {
 if (process.env.TEST_NOTIF === "true") {
   const b = await getMinutes("BTC"), last = b[b.length - 1].close;
   const p = { id: "test-" + Date.now(), sym: "BTC", tf: "1m", dir: 1, entry: last, stop: last * 0.997, target: last * 1.006, score: 0, details: [], news: "", confidence: null, t: Date.now(), source: "github",
-    reason: "Notification de test. Tu peux toucher « Accepter » pour essayer le suivi du trade (compte fictif) : tu recevras la confirmation dans les 5 à 15 minutes." };
-  proposals.unshift(p);
+    reason: "Notification de test. Tu peux toucher « Accepter » pour essayer le suivi du trade (compte fictif)." };
   await notify(p);
-  save();
   process.exit(0);
 }
 // 3) chercher de nouveaux trades
 const scores = {};
+async function scan() {
+const today = new Date().toISOString().slice(0, 10);
+if (state.day !== today) { state.day = today; state.count = 0; }
 for (const sym of cfg.markets) {
   const m = MARKETS[sym];
   try {
@@ -175,3 +175,31 @@ for (const sym of cfg.markets) {
 try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) { log("gestion : erreur", e?.stack || e); }
 saveAccount(acc);
 save();
+}
+
+// GitHub ne lance le cron qu'environ une fois par heure : le script reste donc allumé (LOOP_MINUTES),
+// lit tes boutons toutes les 20 secondes, vérifie les prix et cherche des trades toutes les 5 minutes,
+// et enregistre l'état dans le dépôt pour le site.
+const LOOP = +(process.env.LOOP_MINUTES || 0), end = Date.now() + LOOP * 60000;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const shape = () => JSON.stringify([acc.positions.map(p => [p.id, p.stop, p.target]), acc.history.length]);
+let lastScan = 0, lastCommit = Date.now(), lastShape = shape();
+function commit(force) {
+  if (!LOOP) return;
+  const s = shape();
+  if (!force && s === lastShape && Date.now() - lastCommit < 10 * 60000) return;
+  try {
+    execSync("git add proposals.json assistant-state.json server-account.json", { stdio: "ignore" });
+    try { execSync("git diff --cached --quiet"); return; } catch (e) {}
+    execSync('git commit -q -m "Assistant : suivi des trades" && git pull -q --rebase -X theirs origin main && git push -q origin main', { stdio: "inherit" });
+    lastCommit = Date.now(); lastShape = s;
+  } catch (e) { log("enregistrement impossible", e?.message || e); }
+}
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { log("arrêt demandé, j'enregistre"); commit(true); process.exit(0); });
+do {
+  if (Date.now() - lastScan >= 5 * 60000) { lastScan = Date.now(); await scan(); }
+  else { await follow(); try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) {} saveAccount(acc); save(); }
+  commit();
+  if (LOOP) await sleep(20000);
+} while (Date.now() < end);
+commit(true);

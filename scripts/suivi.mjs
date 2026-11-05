@@ -24,10 +24,12 @@ const NAMES = { BTC: "Bitcoin", XAU: "or", NAS: "Nasdaq" };
 const order = (act, id, text) => ({ action: "http", label: act === "accept" ? "Accepter" : act === "refuse" ? "Refuser" : "Fermer le trade",
   url: `https://ntfy.sh/${process.env.NTFY_TOPIC}`, method: "POST", headers: { Tags: act === "refuse" ? "no_entry_sign" : "white_check_mark", Priority: "3" },
   body: `${text} [${act}:${id}]`, clear: true });
+// l'ordre « accepter » porte aussi les niveaux, pour marcher même si la proposition n'est plus dans proposals.json
+const acceptTag = p => `${p.id}:${p.sym}:${p.dir}:${+p.stop.toFixed(5)}:${+p.target.toFixed(5)}`;
 export function proposalActions(p, siteUrl) {
   const what = `${p.dir === 1 ? "l'achat" : "la vente"} ${NAMES[p.sym] || p.sym}`;
   return [
-    order("accept", p.id, `✅ Reçu ! J'ouvre ${what} dans 5 à 15 minutes et je te préviens.`),
+    order("accept", acceptTag(p), `✅ Reçu ! J'ouvre ${what} dans moins d'une minute.`),
     order("refuse", p.id, `Proposition refusée, je ne prends pas ${what}.`),
     { action: "view", label: "Voir le site", url: siteUrl },
   ];
@@ -55,8 +57,9 @@ async function readControl(state, proposals) {
   const out = [];
   for (const m of await poll(t, "mainSince", state)) { // nouveaux boutons
     const g = /\[(accept|refuse|close):([^\]]+)\]/.exec(m.message || ""); if (!g) continue;
-    const p = proposals.find(x => x.id === g[2]) || {};
-    out.push({ ...p, act: g[1], id: g[2], at: m.time * 1000 });
+    const [id, sym, dir, stop, target] = g[2].split(":");
+    const p = proposals.find(x => x.id === id) || (sym ? { sym, dir: +dir, stop: +stop, target: +target } : {});
+    out.push({ ...p, act: g[1], id, at: m.time * 1000 });
   }
   for (const m of await poll(t + "-ctl", "ctlSince", state)) { // anciens boutons
     try { out.push({ ...JSON.parse(m.message), at: m.time * 1000 }); } catch (e) {}
@@ -64,7 +67,7 @@ async function readControl(state, proposals) {
   return out.sort((a, b) => a.at - b.at);
 }
 
-const closeActions = id => [{ ...order("close", id, "Reçu, je ferme le trade dans 5 à 15 minutes."), clear: false }];
+const closeActions = id => [{ ...order("close", id, "Reçu, je ferme le trade dans moins d'une minute."), clear: false }];
 
 function close(acc, p, price, why, at) {
   const pnl = pnlOf(p, price);
@@ -89,7 +92,7 @@ export async function track({ acc, state, proposals, markets, getMinutes }) {
     }
     if (c.act === "close") {
       const p = acc.positions.find(x => x.id === c.id); if (!p) continue;
-      const b = await minutes(p.sym), last = b[b.length - 1].close;
+      const b = await minutes(p.sym), bar = [...b].reverse().find(x => x.time * 1000 <= c.at) || b[b.length - 1], last = bar.close; // prix au moment du clic
       const pnl = close(acc, p, last, "fermé à la main", c.at);
       await send({ title: `${markets[p.sym].name} fermé : ${money(pnl)}`, message: `Fermé à ${px(last)}. Solde du compte : ${px(acc.balance)} $`, priority: 4, tags: [pnl >= 0 ? "white_check_mark" : "x"] });
       continue;

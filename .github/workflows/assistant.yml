@@ -1,8 +1,10 @@
 name: Assistant de trading
 
+# Le serveur reste allumé environ 5 h 30 (il lit tes boutons toutes les 20 secondes),
+# puis relance lui-même la suite. Le cron sert seulement de secours si la chaîne s'arrête.
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
     inputs:
       test:
@@ -12,32 +14,34 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
-  group: assistant
+  group: ${{ inputs.test && 'assistant-test' || 'assistant' }}
   cancel-in-progress: false
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm install --no-save --no-package-lock @anthropic-ai/sdk@1.4.0
-      - name: Analyse des marchés
+      - name: Assistant (boucle)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           TEST_NOTIF: ${{ inputs.test }}
-        run: node scripts/assistant.mjs
-      - name: Enregistre les propositions
+          LOOP_MINUTES: ${{ inputs.test && '0' || '330' }}
         run: |
           git config user.name "assistant-trading"
           git config user.email "assistant-trading@users.noreply.github.com"
-          git add proposals.json assistant-state.json server-account.json
-          if git diff --cached --quiet; then echo "rien de nouveau"; exit 0; fi
-          git commit -m "Assistant : nouvelles propositions"
-          git pull --rebase origin main && git push origin main
+          node scripts/assistant.mjs
+      - name: Relance la suite
+        if: ${{ !inputs.test && (success() || failure()) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run assistant.yml --repo ${{ github.repository }} --ref main
