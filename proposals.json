@@ -1,5 +1,54 @@
 [
  {
+  "id": "NAS-1793874778847",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 28413.5,
+  "stop": 28167.75,
+  "target": 28905,
+  "score": 6,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
+  "confidence": null,
+  "t": 1793874778847,
+  "source": "github"
+ },
+ {
   "id": "XAU-1793853059087",
   "sym": "XAU",
   "tf": "15m",
@@ -50,7 +99,8 @@
   "reason": "9 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1793853059087,
-  "source": "github"
+  "source": "github",
+  "status": "accepted"
  },
  {
   "id": "XAU-1793849306192",
