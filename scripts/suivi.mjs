@@ -20,7 +20,7 @@ const pnlOf = (p, price) => (price - p.entry) * p.dir * p.qty;
 
 // Boutons à mettre sur une notification de proposition.
 // Ils publient sur ton propre sujet : tu vois tout de suite « Reçu », et le serveur lit l'ordre entre crochets.
-const NAMES = { BTC: "Bitcoin", XAU: "or" };
+const NAMES = { BTC: "Bitcoin", XAU: "or", NAS: "Nasdaq" };
 const order = (act, id, text) => ({ action: "http", label: act === "accept" ? "Accepter" : act === "refuse" ? "Refuser" : "Fermer le trade",
   url: `https://ntfy.sh/${process.env.NTFY_TOPIC}`, method: "POST", headers: { Tags: act === "refuse" ? "no_entry_sign" : "white_check_mark", Priority: "3" },
   body: `${text} [${act}:${id}]`, clear: true });
@@ -95,7 +95,6 @@ export async function track({ acc, state, proposals, markets, getMinutes }) {
       continue;
     }
     if (c.act !== "accept") continue;
-    if (acc.positions.some(x => x.id === c.id) || acc.history.some(x => x.id === c.id)) continue;
     const m = markets[c.sym]; if (!m || !c.dir || !c.stop || !c.target) { log("ordre sans proposition", c.id); continue; }
     const prop = proposals.find(x => x.id === c.id) || c;
     const b = await minutes(c.sym);
@@ -108,7 +107,9 @@ export async function track({ acc, state, proposals, markets, getMinutes }) {
       continue;
     }
     const qty = (acc.balance * RISK) / Math.abs(entry - stop);
-    const p = { id: c.id, sym: c.sym, dir, qty, entry, stop, target, lev: LEV, openedAt: bar.time * 1000, checkedTo: bar.time, lastPnlNotif: now };
+    // on peut accepter plusieurs fois la même proposition : chaque clic ouvre un trade
+    const n = [...acc.positions, ...acc.history].filter(x => (x.prop || x.id) === c.id).length;
+    const p = { id: n ? `${c.id}#${n + 1}` : c.id, prop: c.id, sym: c.sym, dir, qty, entry, stop, target, R: Math.abs(entry - stop), lev: LEV, openedAt: bar.time * 1000, checkedTo: bar.time, lastPnlNotif: now };
     acc.positions.push(p);
     if (proposals.includes(prop)) prop.status = "accepted";
     log("trade ouvert", JSON.stringify(p));
@@ -132,10 +133,11 @@ export async function track({ acc, state, proposals, markets, getMinutes }) {
       p.checkedTo = x.time;
     }
     if (hit) {
+      if (hit.why === "stop loss" && p.locked) hit.why = p.locked > 0 ? "stop loss remonté (gain protégé)" : "stop loss au point d'entrée";
       const pnl = close(acc, p, hit.price, hit.why, hit.at);
       log("trade fermé", p.id, hit.why, pnl);
       await send({
-        title: `${hit.why === "take profit" ? "🎯 Take profit" : "🛑 Stop loss"} touché sur ${m.name} : ${money(pnl)}`,
+        title: `${hit.why === "take profit" ? "🎯 Take profit" : pnl >= 0 ? "🔒 Stop loss protégé" : "🛑 Stop loss"} touché sur ${m.name} : ${money(pnl)}`,
         message: `${p.dir === 1 ? "Achat" : "Vente"} de ${px(p.entry)} fermé à ${px(hit.price)}. Solde du compte : ${px(acc.balance)} $`,
         priority: 5, tags: [pnl >= 0 ? "white_check_mark" : "x"],
       });
@@ -154,4 +156,36 @@ export async function track({ acc, state, proposals, markets, getMinutes }) {
     }
   }
   acc.updated = now;
+}
+
+// Gestion automatique des trades ouverts (après le scan, avec le score actuel de chaque marché) :
+// 1) à +1R, le stop loss monte au point d'entrée : le trade ne peut presque plus perdre ;
+// 2) ensuite, le stop suit le prix à 1R de distance pour garder une partie du gain ;
+// 3) si les méthodes confirment toujours la tendance, j'ajoute un petit trade de renfort (0,5 % de risque),
+//    avec son stop au point d'entrée du premier trade, et l'objectif des deux est repoussé à 3R.
+export async function manage({ acc, scores, cfg, markets }) {
+  const M = { breakeven: 1, trail: true, pyramid: true, addRisk: 0.005, ...(cfg.manage || {}) };
+  for (const p of [...acc.positions]) {
+    if (p.last == null || !p.R) continue;
+    const m = markets[p.sym], r = ((p.last - p.entry) * p.dir) / p.R, notes = [];
+    let lock = p.locked ?? null; // en R
+    if (r >= M.breakeven && lock == null) { lock = 0.05; notes.push(`stop loss remonté au point d'entrée (${px(p.entry + p.dir * 0.05 * p.R)}) : ce trade ne peut plus perdre, sauf saut brutal du prix`); }
+    if (M.trail && r >= 2 && lock != null && r - 1 > lock + 0.25) { lock = Math.floor((r - 1) * 4) / 4; notes.push(`stop loss remonté à ${px(p.entry + p.dir * lock * p.R)} : ${money(lock * p.R * p.qty)} de gain sont garantis`); }
+    if (lock != null && lock !== p.locked) {
+      p.locked = lock; p.stop = p.entry + p.dir * lock * p.R;
+      for (const a of acc.positions) if (a.parent === p.id && (p.stop - a.stop) * p.dir > 0) a.stop = p.stop; // le renfort suit le stop du trade principal
+    }
+    const sc = scores[p.sym];
+    if (M.pyramid && !p.isAdd && !p.added && r >= M.breakeven && sc != null && Math.sign(sc) === p.dir && Math.abs(sc) >= (cfg.minScore || 6) / 2) {
+      const R = Math.abs(p.last - p.entry), target = p.entry + p.dir * 3 * p.R;
+      const add = { id: `${p.id}+`, prop: p.prop || p.id, sym: p.sym, dir: p.dir, qty: (acc.balance * M.addRisk) / R, entry: p.last, stop: p.entry, target, R, lev: p.lev,
+        isAdd: true, parent: p.id, openedAt: Date.now(), checkedTo: p.checkedTo, lastPnlNotif: Date.now(), last: p.last, pnl: 0 };
+      p.added = true; p.target = target; acc.positions.push(add);
+      notes.push(`les méthodes confirment toujours (score ${sc}) : j'ajoute un trade de renfort à ${px(p.last)}, stop au point d'entrée du premier, objectif des deux repoussé à ${px(target)}`);
+    }
+    if (notes.length) {
+      log("gestion", p.id, notes.join(" | "));
+      await send({ title: `${m.name} : je sécurise ton trade (${money(p.pnl ?? 0)})`, message: notes.map(x => "• " + x).join("\n"), priority: 3, tags: ["shield"], actions: closeActions(p.id) });
+    }
+  }
 }

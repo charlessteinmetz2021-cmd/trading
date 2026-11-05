@@ -1,8 +1,18 @@
 {
-  "markets": ["BTC", "XAU"],
+  "markets": [
+    "BTC",
+    "XAU",
+    "NAS"
+  ],
   "timeframe": "15m",
   "minScore": 6,
   "maxPerDay": 8,
   "checkNews": true,
-  "siteUrl": "https://charlessteinmetz2021-cmd.github.io/trading/"
+  "siteUrl": "https://charlessteinmetz2021-cmd.github.io/trading/",
+  "manage": {
+    "breakeven": 1,
+    "trail": true,
+    "pyramid": true,
+    "addRisk": 0.005
+  }
 }

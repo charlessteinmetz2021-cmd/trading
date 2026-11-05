@@ -1119,11 +1119,11 @@ async function pullServerAccount() {
 function renderServer() {
   if (!SRV) return;
   const box = $("srv"); box.hidden = !SRV.positions.length && !SRV.history.length;
-  const names = { BTC: "Bitcoin", XAU: "Or" };
+  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" };
   let open = 0;
   $("srvPos").innerHTML = SRV.positions.map(p => {
-    const now = price[p.sym] ?? p.last ?? p.entry, v = (now - p.entry) * p.dir * p.qty; open += v;
-    return `<div class="prop" style="border-left:4px solid ${v >= 0 ? "var(--gain)" : "var(--loss)"}"><b>${p.dir === 1 ? "Achat" : "Vente"} ${names[p.sym] || p.sym}</b> · entrée ${fmt(p.entry)} · SL ${fmt(p.stop)} · TP ${fmt(p.target)}<br>Prix ${fmt(now)} · <b style="color:${v >= 0 ? "var(--gain)" : "var(--loss)"}">${v >= 0 ? "+" : ""}${fmt(v)} $</b></div>`;
+    const now = (p.sym !== "NAS" && price[p.sym]) || p.last || p.entry, v = (now - p.entry) * p.dir * p.qty; open += v;
+    return `<div class="prop" style="border-left:4px solid ${v >= 0 ? "var(--gain)" : "var(--loss)"}"><b>${p.isAdd ? "Renfort · " : ""}${p.dir === 1 ? "Achat" : "Vente"} ${names[p.sym] || p.sym}</b>${p.locked != null ? ` · <span style="color:var(--gain)">🔒 ${p.locked > 0.1 ? "gain protégé" : "SL au point d'entrée"}</span>` : ""} · entrée ${fmt(p.entry)} · SL ${fmt(p.stop)} · TP ${fmt(p.target)}<br>Prix ${fmt(now)} · <b style="color:${v >= 0 ? "var(--gain)" : "var(--loss)"}">${v >= 0 ? "+" : ""}${fmt(v)} $</b></div>`;
   }).join("") || '<p class="small">Aucun trade ouvert sur le serveur.</p>';
   $("srvSum").textContent = `Solde ${fmt(SRV.balance)} $ · en cours ${open >= 0 ? "+" : ""}${fmt(open)} $ · résultat total ${fmt(SRV.balance - SRV.start)} $ · mis à jour ${SRV.updated ? new Date(SRV.updated).toLocaleTimeString("fr-FR") : "–"}`;
   $("srvHist").innerHTML = SRV.history.slice(0, 20).map(h => `${new Date(h.closedAt).toLocaleString("fr-FR")} · ${h.dir === 1 ? "achat" : "vente"} ${names[h.sym] || h.sym} · ${h.why} · <b style="color:${h.pnl >= 0 ? "var(--gain)" : "var(--loss)"}">${h.pnl >= 0 ? "+" : ""}${fmt(h.pnl)} $</b>`).join("<br>") || "Aucun.";

@@ -5,10 +5,10 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import * as I from "../indicators.js";
 import { scoreMarket } from "../signals.js";
-import { loadAccount, saveAccount, track, proposalActions, send } from "./suivi.mjs";
+import { loadAccount, saveAccount, track, manage, proposalActions, send } from "./suivi.mjs";
 
 const cfg = JSON.parse(readFileSync("assistant-config.json", "utf8"));
-const MARKETS = { BTC: { name: "Bitcoin", binance: "BTCUSDT", coinbase: "BTC-USD", dec: 2 }, XAU: { name: "Or", binance: "PAXGUSDT", coinbase: "PAXG-USD", dec: 2 } };
+const MARKETS = { BTC: { name: "Bitcoin", binance: "BTCUSDT", coinbase: "BTC-USD", dec: 2 }, XAU: { name: "Or", binance: "PAXGUSDT", coinbase: "PAXG-USD", dec: 2 }, NAS: { name: "Nasdaq", yahoo: "NQ=F", dec: 2 } };
 const STEP = { "5m": 300, "15m": 900, "1h": 3600, "4h": 14400 };
 const CB_GRAN = { "5m": 300, "15m": 900, "1h": 3600, "4h": 21600 };
 const state = existsSync("assistant-state.json") ? JSON.parse(readFileSync("assistant-state.json", "utf8")) : { day: "", count: 0, lastSig: {} };
@@ -17,7 +17,20 @@ const today = new Date().toISOString().slice(0, 10);
 if (state.day !== today) { state.day = today; state.count = 0; }
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
+// Nasdaq : contrat à terme NQ (Yahoo Finance, gratuit, sans clé)
+async function yahoo(sym, interval, range) {
+  for (const host of ["query1", "query2"]) {
+    try {
+      const r = await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}`, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (!r.ok) { log("yahoo", host, r.status); continue; }
+      const res = (await r.json()).chart.result[0], q = res.indicators.quote[0];
+      return res.timestamp.map((t, i) => ({ time: t, open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume[i] || 0 })).filter(x => x.close != null && x.high != null);
+    } catch (e) { log("yahoo", host, e?.message || e); }
+  }
+  throw new Error("Yahoo indisponible");
+}
 async function fetchCandles(m, tf) {
+  if (m.yahoo) return yahoo(m.yahoo, tf === "4h" ? "1h" : tf, { "5m": "5d", "15m": "5d", "1h": "1mo", "4h": "3mo" }[tf]);
   for (const host of ["https://data-api.binance.vision", "https://api.binance.com"]) {
     try {
       const r = await fetch(`${host}/api/v3/klines?symbol=${m.binance}&interval=${tf}&limit=500`);
@@ -84,6 +97,7 @@ async function notify(p) {
 
 async function getMinutes(sym) {
   const m = MARKETS[sym];
+  if (m.yahoo) return yahoo(m.yahoo, "1m", "1d");
   for (const host of ["https://data-api.binance.vision", "https://api.binance.com"]) {
     try {
       const r = await fetch(`${host}/api/v3/klines?symbol=${m.binance}&interval=1m&limit=1000`);
@@ -116,6 +130,7 @@ if (process.env.TEST_NOTIF === "true") {
   process.exit(0);
 }
 // 3) chercher de nouveaux trades
+const scores = {};
 for (const sym of cfg.markets) {
   const m = MARKETS[sym];
   try {
@@ -123,9 +138,10 @@ for (const sym of cfg.markets) {
     const b = all.slice(0, -1); // bougies clôturées seulement
     if (b.length < 210) { log(sym, "pas assez de données"); continue; }
     const sc = scoreMarket(b, STEP[cfg.timeframe], 0);
+    scores[sym] = sc.score;
     const sig = `${b[b.length - 1].time}:${Math.sign(sc.score)}`;
     log(sym, "score", sc.score, sc.details.map(x => `${x.name}:${x.v}`).join(" "));
-    const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < 15 * 60000) || acc.positions.some(p => p.sym === sym);
+    const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < 15 * 60000);
     if (Math.abs(sc.score) < cfg.minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
     state.lastSig[sym] = sig;
     const cc = calendarCheck();
@@ -155,4 +171,7 @@ for (const sym of cfg.markets) {
     log(sym, "proposition envoyée", JSON.stringify(p));
   } catch (e) { log(sym, "erreur", e?.message || e); }
 }
+// 4) sécuriser les trades ouverts (stop au point d'entrée, stop suiveur, renfort)
+try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) { log("gestion : erreur", e?.stack || e); }
+saveAccount(acc);
 save();
