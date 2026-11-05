@@ -6,7 +6,7 @@
   ],
   "timeframe": "15m",
   "minScore": 6,
-  "maxPerDay": 8,
+  "maxPerDay": 20,
   "checkNews": true,
   "siteUrl": "https://charlessteinmetz2021-cmd.github.io/trading/",
   "manage": {

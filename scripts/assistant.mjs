@@ -183,7 +183,7 @@ save();
 const LOOP = +(process.env.LOOP_MINUTES || 0), end = Date.now() + LOOP * 60000;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const shape = () => JSON.stringify([acc.positions.map(p => [p.id, p.stop, p.target]), acc.history.length]);
-let lastScan = 0, lastCommit = Date.now(), lastShape = shape();
+let lastScan = 0, lastCommit = 0, lastShape = "";
 function commit(force) {
   if (!LOOP) return;
   const s = shape();
