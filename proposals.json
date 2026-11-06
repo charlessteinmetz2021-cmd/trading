@@ -54,7 +54,8 @@
   "reason": "9 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1793939697406,
-  "source": "github"
+  "source": "github",
+  "status": "accepted"
  },
  {
   "id": "XAU-1793938628210",
