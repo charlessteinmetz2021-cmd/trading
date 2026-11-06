@@ -1,5 +1,115 @@
 [
  {
+  "id": "XAU-1793928640128",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 4062.57,
+  "stop": 4079.3217411297223,
+  "target": 4029.066517740556,
+  "score": -9,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -2
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Bollinger",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Structure",
+    "v": -2
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Average Hourly Earnings m/m ven. 14:30 ; Non-Farm Employment Change ven. 14:30 ; Unemployment Rate ven. 14:30.",
+  "reason": "8 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1793928640128,
+  "source": "github"
+ },
+ {
+  "id": "BTC-1793928639931",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 76069.37,
+  "stop": 76562.34387224982,
+  "target": 75083.42225550034,
+  "score": -7,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Stochastique",
+    "v": -2
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Average Hourly Earnings m/m ven. 14:30 ; Non-Farm Employment Change ven. 14:30 ; Unemployment Rate ven. 14:30.",
+  "reason": "7 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Stochastique, Supertrend, VWAP.",
+  "confidence": null,
+  "t": 1793928639931,
+  "source": "github"
+ },
+ {
   "id": "NAS-1793924403105",
   "sym": "NAS",
   "tf": "15m",
