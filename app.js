@@ -992,7 +992,30 @@ function notify(p) {
   $("toastGo").onclick = () => { $("toast").hidden = true; $("tAssist").scrollIntoView({ behavior: "smooth" }); };
 }
 
-function acceptProposal(p) {
+// ---------- compte partagé avec le téléphone (le serveur exécute les trades) ----------
+const TOPIC_KEY = "atelier-ntfy";
+const topic = () => { try { return localStorage.getItem(TOPIC_KEY) || ""; } catch (e) { return ""; } };
+const NAMES_FR = { BTC: "Bitcoin", XAU: "or", NAS: "Nasdaq" };
+async function sendOrder(act, p, text) {
+  const t = topic(); if (!t) return false;
+  const tag = act === "accept" ? `${p.id}:${p.sym}:${p.dir}:${+(+p.stop).toFixed(5)}:${+(+p.target).toFixed(5)}` : p.id;
+  try {
+    const r = await fetch("https://ntfy.sh/" + encodeURIComponent(t), { method: "POST", body: `${text} (depuis le PC) [${act}:${tag}]`, headers: { Tags: act === "refuse" ? "no_entry_sign" : "white_check_mark" } });
+    if (!r.ok) throw new Error("ntfy " + r.status);
+    fastServer(); return true;
+  } catch (e) { asLog("Envoi au serveur impossible : " + (e?.message || e)); return null; }
+}
+// après un ordre, relire le compte du serveur plus souvent pendant 3 minutes
+let fastTimer = null;
+function fastServer() { clearInterval(fastTimer); let n = 0; fastTimer = setInterval(() => { pullServerAccount(); pullServerProposals(); if (++n >= 12) clearInterval(fastTimer); }, 15000); }
+
+async function acceptProposal(p) {
+  if (topic()) {
+    const what = `${p.dir === 1 ? "l'achat" : "la vente"} ${NAMES_FR[p.sym] || p.sym}`;
+    const ok = await sendOrder("accept", p, `✅ Reçu ! J'ouvre ${what} dans moins d'une minute.`);
+    if (ok) { p.status = "accepted"; saveAS(); renderProposals(); asLog(`Envoyé au serveur : ${what}. Il apparaît dans « Trades suivis par le serveur » dans 1 à 2 minutes, et ton téléphone est prévenu.`); }
+    return;
+  }
   const px = price[p.sym];
   if (px == null) return asLog("Prix indisponible, impossible d'exécuter.");
   if ((p.stop - px) * p.dir >= 0) { p.status = "expired"; saveAS(); renderProposals(); return asLog("Le prix a déjà dépassé le stop : proposition expirée."); }
@@ -1025,7 +1048,8 @@ function renderProposals() {
     </div>`;
   }).join("") : '<p class="small">Aucune proposition pour l\'instant. Active l\'assistant : il analyse les marchés toutes les minutes et te prévient dès qu\'un trade se présente.</p>';
   el.querySelectorAll("[data-acc]").forEach(bt => bt.onclick = () => acceptProposal(AS.proposals.find(p => p.id == bt.dataset.acc)));
-  el.querySelectorAll("[data-ref]").forEach(bt => bt.onclick = () => { const p = AS.proposals.find(x => x.id == bt.dataset.ref); p.status = "refused"; saveAS(); renderProposals(); document.title = "Atelier de trading"; });
+  el.querySelectorAll("[data-ref]").forEach(bt => bt.onclick = () => { const p = AS.proposals.find(x => x.id == bt.dataset.ref); p.status = "refused"; saveAS(); renderProposals(); document.title = "Atelier de trading";
+    if (topic() && p.source === "github") sendOrder("refuse", p, "Proposition refusée."); });
 }
 function asLog(t) { const el = $("asLog"); if (el) el.textContent = new Date().toLocaleTimeString("fr-FR") + " · " + t; }
 
@@ -1085,8 +1109,9 @@ async function pullServerProposals() {
     const list = await r.json();
     let added = 0;
     for (const p of list) {
-      if (AS.proposals.some(x => x.id === p.id)) continue;
-      AS.proposals.push({ ...p, status: Date.now() - p.t > 15 * 60000 ? "expired" : "pending" }); added++;
+      const have = AS.proposals.find(x => x.id === p.id);
+      if (have) { if (p.status && have.status !== p.status && ["accepted", "refused", "missed"].includes(p.status)) { have.status = p.status === "missed" ? "expired" : p.status; added++; } continue; }
+      AS.proposals.push({ ...p, status: p.status === "missed" ? "expired" : p.status || (Date.now() - p.t > 15 * 60000 ? "expired" : "pending") }); added++;
     }
     if (added) { AS.proposals.sort((a, b) => b.t - a.t); AS.proposals = AS.proposals.slice(0, 30); saveAS(); renderProposals(); }
   } catch (e) {}
@@ -1112,7 +1137,7 @@ async function handleHash() {
   }
 }
 // ---------- compte du serveur : trades acceptés depuis la notification ----------
-let SRV = null;
+let SRV = null; const closing = new Set();
 async function pullServerAccount() {
   try { const r = await fetch(SITE + "server-account.json?" + Date.now(), { cache: "no-store" }); if (r.ok) { SRV = await r.json(); renderServer(); } } catch (e) {}
 }
@@ -1123,11 +1148,22 @@ function renderServer() {
   let open = 0;
   $("srvPos").innerHTML = SRV.positions.map(p => {
     const now = (p.sym !== "NAS" && price[p.sym]) || p.last || p.entry, v = (now - p.entry) * p.dir * p.qty; open += v;
-    return `<div class="prop" style="border-left:4px solid ${v >= 0 ? "var(--gain)" : "var(--loss)"}"><b>${p.isAdd ? "Renfort · " : ""}${p.dir === 1 ? "Achat" : "Vente"} ${names[p.sym] || p.sym}</b>${p.locked != null ? ` · <span style="color:var(--gain)">🔒 ${p.locked > 0.1 ? "gain protégé" : "SL au point d'entrée"}</span>` : ""} · entrée ${fmt(p.entry)} · SL ${fmt(p.stop)} · TP ${fmt(p.target)}<br>Prix ${fmt(now)} · <b style="color:${v >= 0 ? "var(--gain)" : "var(--loss)"}">${v >= 0 ? "+" : ""}${fmt(v)} $</b></div>`;
+    return `<div class="prop" style="border-left:4px solid ${v >= 0 ? "var(--gain)" : "var(--loss)"}"><b>${p.isAdd ? "Renfort · " : ""}${p.dir === 1 ? "Achat" : "Vente"} ${names[p.sym] || p.sym}</b>${p.locked != null ? ` · <span style="color:var(--gain)">🔒 ${p.locked > 0.1 ? "gain protégé" : "SL au point d'entrée"}</span>` : ""} · entrée ${fmt(p.entry)} · SL ${fmt(p.stop)} · TP ${fmt(p.target)}<br>Prix ${fmt(now)} · <b style="color:${v >= 0 ? "var(--gain)" : "var(--loss)"}">${v >= 0 ? "+" : ""}${fmt(v)} $</b>${topic() ? ` <button class="chip" data-srvclose="${p.id}">${closing.has(p.id) ? "Fermeture envoyée…" : "Fermer"}</button>` : ""}</div>`;
   }).join("") || '<p class="small">Aucun trade ouvert sur le serveur.</p>';
+  $("srvPos").querySelectorAll("[data-srvclose]").forEach(bt => bt.onclick = async () => {
+    if (closing.has(bt.dataset.srvclose)) return;
+    if (await sendOrder("close", { id: bt.dataset.srvclose }, "Reçu, je ferme le trade dans moins d'une minute.")) { closing.add(bt.dataset.srvclose); renderServer(); }
+  });
   $("srvSum").textContent = `Solde ${fmt(SRV.balance)} $ · en cours ${open >= 0 ? "+" : ""}${fmt(open)} $ · résultat total ${fmt(SRV.balance - SRV.start)} $ · mis à jour ${SRV.updated ? new Date(SRV.updated).toLocaleTimeString("fr-FR") : "–"}`;
   $("srvHist").innerHTML = SRV.history.slice(0, 20).map(h => `${new Date(h.closedAt).toLocaleString("fr-FR")} · ${h.dir === 1 ? "achat" : "vente"} ${names[h.sym] || h.sym} · ${h.why} · <b style="color:${h.pnl >= 0 ? "var(--gain)" : "var(--loss)"}">${h.pnl >= 0 ? "+" : ""}${fmt(h.pnl)} $</b>`).join("<br>") || "Aucun.";
 }
+function setupTopic() {
+  const inp = $("ntfyTopic"), st = $("ntfyState");
+  const show = () => { st.textContent = topic() ? "✓ Relié : ce que tu acceptes ou fermes ici passe par le serveur, comme sur ton téléphone." : "Pas encore relié : les propositions acceptées ici restent sur le simulateur de ce PC."; };
+  inp.value = topic(); show();
+  $("ntfySave").onclick = () => { try { const v = inp.value.trim().replace(/^https?:\/\/ntfy\.sh\//, ""); v ? localStorage.setItem(TOPIC_KEY, v) : localStorage.removeItem(TOPIC_KEY); } catch (e) {} show(); renderServer(); };
+}
+setupTopic();
 pullServerAccount(); setInterval(pullServerAccount, 60000); setInterval(renderServer, 2000);
 pullServerProposals().then(handleHash);
 setInterval(pullServerProposals, 60000);
