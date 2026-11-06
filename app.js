@@ -739,6 +739,11 @@ function renderAll() {
     return `<tr><td>${m.name}</td><td>${side(h.dir)}</td><td>${fmt(h.entry, m.dec)}</td><td>${fmt(h.exit, m.dec)}</td><td>${h.reason}</td><td class="${signCls(h.pnl)}">${sgn(h.pnl)}${usd(h.pnl)}</td></tr>`;
   }).join("") : '<tr><td colspan="6" class="empty">L\'historique se remplit quand tu clôtures un trade.</td></tr>';
 }
+document.addEventListener("pointerdown", e => {
+  const c = e.target.closest("#hud [data-close]"); if (!c) return;
+  e.preventDefault(); e.stopPropagation();
+  const p = S.positions.find(x => x.id == c.dataset.close); if (p && price[p.sym] != null) closePos(p, price[p.sym], "Manuel");
+}, true);
 document.addEventListener("click", e => {
   const c = e.target.closest("[data-close]");
   if (c) { const p = S.positions.find(x => x.id == c.dataset.close); if (p && price[p.sym] != null) closePos(p, price[p.sym], "Manuel"); }
@@ -1170,6 +1175,39 @@ function renderServer() {
   $("srvSum").textContent = `Solde ${fmt(SRV.balance)} $ · en cours ${open >= 0 ? "+" : ""}${fmt(open)} $ · résultat total ${fmt(SRV.balance - SRV.start)} $ · mis à jour ${SRV.updated ? new Date(SRV.updated).toLocaleTimeString("fr-FR") : "–"}`;
   $("srvHist").innerHTML = SRV.history.slice(0, 20).map(h => `${new Date(h.closedAt).toLocaleString("fr-FR")} · ${h.dir === 1 ? "achat" : "vente"} ${names[h.sym] || h.sym} · ${h.why} · <b style="color:${h.pnl >= 0 ? "var(--gain)" : "var(--loss)"}">${h.pnl >= 0 ? "+" : ""}${fmt(h.pnl)} $</b>`).join("<br>") || "Aucun.";
 }
+// ---------- panneau « Trades en cours » : gain/perte en direct + bouton Clôturer ----------
+let openKey = "";
+function renderOpen() {
+  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" };
+  const loc = S.positions.map(p => ({ k: "L:" + p.id, p, v: pnl(p, price[p.sym]), where: "PC", can: price[p.sym] != null }));
+  const srv = (SRV?.positions || []).map(p => { const now = (p.sym !== "NAS" && price[p.sym]) || p.last || p.entry; return { k: "S:" + p.id, p, v: (now - p.entry) * p.dir * p.qty, where: "serveur", can: !!topic() && !closing.has(p.id), wait: closing.has(p.id) }; });
+  const all = [...loc, ...srv], box = $("openBox");
+  box.hidden = !all.length; if (!all.length) { openKey = ""; return; }
+  const key = all.map(x => x.k + (x.can ? 1 : 0) + (x.wait ? "w" : "")).join("|");
+  if (key !== openKey) { // on ne redessine que si la liste change : le bouton reste cliquable
+    openKey = key;
+    $("openList").innerHTML = all.map(x => `<div class="otrade" data-k="${x.k}">
+      <span><b>${x.p.dir === 1 ? "Achat" : "Vente"} ${names[x.p.sym] || x.p.sym}</b> <span class="small">(${x.where}${x.p.isAdd ? ", renfort" : ""})</span></span>
+      <button data-oclose="${x.k}" ${x.can ? "" : "disabled"} title="${x.k[0] === "S" && !topic() ? "Relie ce PC à ton téléphone (section Assistant) pour fermer ce trade d'ici" : ""}">${x.wait ? "Fermeture…" : "Clôturer"}</button>
+      <span class="small">entrée ${fmt(x.p.entry, MARKETS[x.p.sym]?.dec ?? 2)} · <span class="opnl"></span></span></div>`).join("");
+  }
+  let tot = 0;
+  for (const x of all) {
+    tot += x.v;
+    const el = $("openList").querySelector(`[data-k="${x.k}"] .opnl`);
+    if (el) { el.textContent = `${sgn(x.v)}${usd(x.v)}`; el.className = "opnl " + signCls(x.v); }
+  }
+  $("openTotal").innerHTML = `Total en cours : <b class="${signCls(tot)}">${sgn(tot)}${usd(tot)}</b>`;
+}
+$("openList").addEventListener("click", async e => {
+  const b = e.target.closest("[data-oclose]"); if (!b || b.disabled) return;
+  const [kind, id] = [b.dataset.oclose[0], b.dataset.oclose.slice(2)];
+  if (kind === "L") { const p = S.positions.find(x => x.id == id); if (p && price[p.sym] != null) closePos(p, price[p.sym], "Manuel"); }
+  else if (await sendOrder("close", { id }, "Reçu, je ferme le trade dans moins d'une minute.")) { closing.add(id); renderServer(); }
+  renderOpen();
+});
+setInterval(renderOpen, 500);
+
 // ---------- bouton « Tout clôturer » (trades du PC + trades du serveur) ----------
 function openServerTrades() { return topic() ? (SRV?.positions || []).filter(p => !closing.has(p.id)) : []; }
 function updateCloseAll() {

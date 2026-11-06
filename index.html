@@ -75,6 +75,13 @@ h2{font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu
 .go1{font:inherit;font-weight:600;padding:8px 18px;border:0;border-radius:6px;color:#fff;cursor:pointer}
 .hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:5;background:var(--fg);color:var(--panel);font-size:.8rem;padding:4px 12px;border-radius:99px}
 .quick{position:absolute;top:8px;right:70px;z-index:5;display:flex;gap:4px}
+.openbox{border:2px solid var(--entry);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:grid;gap:8px}
+.openbox h3{margin:0;font-size:.95rem}
+.otrade{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.otrade:first-child{border-top:0}
+.otrade .opnl{font-family:var(--mono);font-weight:700;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.otrade button{grid-row:span 2;font:inherit;font-weight:700;padding:9px 14px;border:0;border-radius:8px;background:var(--loss);color:#fff;cursor:pointer}
+.otrade button:disabled{opacity:.6;cursor:default}
 .quick .closeall{background:#3a3f45;margin-left:6px}
 .quick button{font:inherit;font-weight:600;font-size:.8rem;padding:5px 12px;border:0;border-radius:6px;color:#fff;cursor:pointer}
 label{display:grid;gap:3px;font-size:.8rem;color:var(--muted)}
@@ -176,6 +183,11 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
     </section>
 
     <section aria-labelledby="tOrder">
+      <div class="openbox" id="openBox" hidden>
+        <h3>Trades en cours</h3>
+        <div id="openList"></div>
+        <p class="small" id="openTotal"></p>
+      </div>
       <h2 id="tOrder">Passer un ordre</h2>
       <div class="row"><span id="oSym">–</span><b id="oPrice">–</b></div>
       <div class="pricefeed" id="feed"><span class="dot"></span>Connexion au prix…</div>
@@ -304,5 +316,5 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script type="module" src="app.js?v=20261106b"></script>
+<script type="module" src="app.js?v=20261106c"></script>
 </body></html>
