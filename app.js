@@ -20,6 +20,7 @@ const signCls = v => (v > 0 ? "gain" : v < 0 ? "loss" : "");
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 const price = { BTC: null, XAU: null, NAS: null };
+let SRV = null; // compte du serveur (trades acceptés depuis le téléphone ou le PC relié)
 let cur = "BTC", tf = "15m", orderType = "market", tool = "none", pending = null, tvMode = true;
 
 // ---------- état sauvegardé dans le navigateur ----------
@@ -447,6 +448,13 @@ function renderPosLines() {
     if (p.sl) posLines.push({ kind: "sl", id: p.id, line: addLine(p.sl, css("--loss"), `SL ${usd(pnl(p, p.sl))}`, 2, 2) });
     if (p.tp) posLines.push({ kind: "tp", id: p.id, line: addLine(p.tp, css("--gain"), `TP +${usd(pnl(p, p.tp))}`, 2, 2) });
   }
+  // trades du serveur (téléphone / PC relié) : traits en pointillés
+  for (const p of (SRV?.positions || []).filter(p => p.sym === cur)) {
+    const v = (px - p.entry) * p.dir * p.qty;
+    posLines.push({ kind: "srv", id: p.id, line: addLine(p.entry, css("--claude"), `Serveur ${p.dir === 1 ? "achat" : "vente"}${p.isAdd ? " (renfort)" : ""} · ${sgn(v)}${usd(v)}`, 1, 2) });
+    posLines.push({ kind: "srvsl", id: p.id, line: addLine(p.stop, css("--loss"), `SL serveur${p.locked != null ? " 🔒" : ""}`, 3, 1) });
+    posLines.push({ kind: "srvtp", id: p.id, line: addLine(p.target, css("--gain"), "TP serveur", 3, 1) });
+  }
   for (const o of S.orders.filter(o => o.sym === cur)) {
     posLines.push({ kind: "order", id: o.id, line: addLine(o.limit, css("--muted"), `Limite ${o.dir === 1 ? "achat" : "vente"} ${o.qty}`, 1, 1) });
   }
@@ -458,6 +466,11 @@ function updatePosTitles() {
     const p = S.positions.find(x => x.id === l.id); if (!p) continue;
     const v = pnl(p, px);
     l.line.applyOptions({ title: `${p.dir === 1 ? "Achat" : "Vente"} ${p.qty} · ${sgn(v)}${usd(v)}` });
+  }
+  for (const l of posLines) if (l.kind === "srv" && px != null) {
+    const p = SRV?.positions.find(x => x.id === l.id); if (!p) continue;
+    const v = (px - p.entry) * p.dir * p.qty;
+    l.line.applyOptions({ title: `Serveur ${p.dir === 1 ? "achat" : "vente"}${p.isAdd ? " (renfort)" : ""} · ${sgn(v)}${usd(v)}` });
   }
 }
 // glisser les SL / TP à la souris ou au doigt
@@ -1137,9 +1150,9 @@ async function handleHash() {
   }
 }
 // ---------- compte du serveur : trades acceptés depuis la notification ----------
-let SRV = null; const closing = new Set();
+const closing = new Set();
 async function pullServerAccount() {
-  try { const r = await fetch(SITE + "server-account.json?" + Date.now(), { cache: "no-store" }); if (r.ok) { SRV = await r.json(); renderServer(); } } catch (e) {}
+  try { const r = await fetch(SITE + "server-account.json?" + Date.now(), { cache: "no-store" }); if (r.ok) { const old = JSON.stringify(SRV?.positions); SRV = await r.json(); renderServer(); if (JSON.stringify(SRV.positions) !== old && !tvMode) renderPosLines(); } } catch (e) {}
 }
 function renderServer() {
   if (!SRV) return;
