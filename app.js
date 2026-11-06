@@ -1170,6 +1170,28 @@ function renderServer() {
   $("srvSum").textContent = `Solde ${fmt(SRV.balance)} $ · en cours ${open >= 0 ? "+" : ""}${fmt(open)} $ · résultat total ${fmt(SRV.balance - SRV.start)} $ · mis à jour ${SRV.updated ? new Date(SRV.updated).toLocaleTimeString("fr-FR") : "–"}`;
   $("srvHist").innerHTML = SRV.history.slice(0, 20).map(h => `${new Date(h.closedAt).toLocaleString("fr-FR")} · ${h.dir === 1 ? "achat" : "vente"} ${names[h.sym] || h.sym} · ${h.why} · <b style="color:${h.pnl >= 0 ? "var(--gain)" : "var(--loss)"}">${h.pnl >= 0 ? "+" : ""}${fmt(h.pnl)} $</b>`).join("<br>") || "Aucun.";
 }
+// ---------- bouton « Tout clôturer » (trades du PC + trades du serveur) ----------
+function openServerTrades() { return topic() ? (SRV?.positions || []).filter(p => !closing.has(p.id)) : []; }
+function updateCloseAll() {
+  const n = S.positions.length + openServerTrades().length, b = $("qClose");
+  b.hidden = !n; b.textContent = `Tout clôturer (${n})`;
+}
+$("qClose").onclick = async () => {
+  const loc = S.positions.filter(p => price[p.sym] != null), srv = openServerTrades();
+  const n = loc.length + srv.length; if (!n) return;
+  if (!confirm(`Clôturer ${n === 1 ? "le trade en cours" : `les ${n} trades en cours`} au prix actuel ?`)) return;
+  let total = 0;
+  for (const p of loc) { total += pnl(p, price[p.sym]); closePos(p, price[p.sym], "Manuel", true); }
+  if (loc.length) { save(); renderAll(); renderPosLines(); }
+  let msg = loc.length ? `${loc.length} trade(s) du PC clôturé(s) : ${sgn(total)}${usd(total)}.` : "";
+  if (srv.length) {
+    const ok = await sendOrder("closeall", { id: "tout" }, "Reçu, je ferme tous les trades en cours.");
+    if (ok) { srv.forEach(p => closing.add(p.id)); renderServer(); msg += ` ${srv.length} trade(s) du serveur en cours de fermeture (moins d'une minute).`; }
+  }
+  say(msg.trim()); asLog(msg.trim()); updateCloseAll();
+};
+setInterval(updateCloseAll, 1000);
+
 function setupTopic() {
   const inp = $("ntfyTopic"), st = $("ntfyState");
   const show = () => { st.textContent = topic() ? "✓ Relié : ce que tu acceptes ou fermes ici passe par le serveur, comme sur ton téléphone." : "Pas encore relié : les propositions acceptées ici restent sur le simulateur de ce PC."; };

@@ -70,5 +70,9 @@ if (s) {
   ok(s.locked != null && (s.stop - s.entry) * s.dir > 0, "stop loss remonté au-dessus du point d'entrée");
   ok(acc.positions.some(p => p.parent === s.id), "trade de renfort ajouté quand les méthodes confirment");
 }
+// 5) Tout clôturer
+const before = acc.positions.length;
+await post("Reçu, je ferme tous les trades en cours. (depuis le PC) [closeall:tout]"); await sleep(3000); await run();
+ok(before > 0 && acc.positions.length === 0 && acc.history.filter(h => h.why === "tout clôturé").length === before, `tout clôturer : ${before} trades fermés`);
 console.log(fails ? `${fails} vérification(s) en échec` : "Tout fonctionne.");
 process.exit(fails ? 1 : 0);

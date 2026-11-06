@@ -56,7 +56,7 @@ async function readControl(state, proposals) {
   const t = process.env.NTFY_TOPIC; if (!t) return [];
   const out = [];
   for (const m of await poll(t, "mainSince", state)) { // nouveaux boutons
-    const g = /\[(accept|refuse|close):([^\]]+)\]/.exec(m.message || ""); if (!g) continue;
+    const g = /\[(accept|refuse|closeall|close):([^\]]+)\]/.exec(m.message || ""); if (!g) continue;
     const [id, sym, dir, stop, target] = g[2].split(":");
     const p = proposals.find(x => x.id === id) || (sym ? { sym, dir: +dir, stop: +stop, target: +target } : {});
     out.push({ ...p, act: g[1], id, at: m.time * 1000 });
@@ -89,6 +89,15 @@ export async function track({ acc, state, proposals, markets, getMinutes }) {
     if (c.act === "refuse") {
       const p = proposals.find(x => x.id === c.id); if (p) p.status = "refused";
       log("proposition refusée", c.id); continue;
+    }
+    if (c.act === "closeall") {
+      let total = 0, n = 0;
+      for (const p of [...acc.positions]) {
+        const b = await minutes(p.sym), bar = [...b].reverse().find(x => x.time * 1000 <= c.at) || b[b.length - 1];
+        total += close(acc, p, bar.close, "tout clôturé", c.at); n++;
+      }
+      if (n) await send({ title: `${n} trade(s) fermé(s) : ${money(total)}`, message: `Tous les trades en cours sont clôturés. Solde du compte : ${px(acc.balance)} $`, priority: 4, tags: [total >= 0 ? "white_check_mark" : "x"] });
+      continue;
     }
     if (c.act === "close") {
       const p = acc.positions.find(x => x.id === c.id); if (!p) continue;
