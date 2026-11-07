@@ -1,5 +1,58 @@
 [
  {
+  "id": "XAU-1794025287549",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 4069.31,
+  "stop": 4065.187119325964,
+  "target": 4077.555761348072,
+  "score": 6,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": -2
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794025287549,
+  "source": "github"
+ },
+ {
   "id": "XAU-1794024375642",
   "sym": "XAU",
   "tf": "15m",
@@ -2659,55 +2712,6 @@
   "reason": "7 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1793876693213,
-  "source": "github"
- },
- {
-  "id": "NAS-1793874778847",
-  "sym": "NAS",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 28413.5,
-  "stop": 28167.75,
-  "target": 28905,
-  "score": 6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
-  "confidence": null,
-  "t": 1793874778847,
   "source": "github"
  }
 ]
