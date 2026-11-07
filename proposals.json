@@ -1,5 +1,62 @@
 [
  {
+  "id": "XAU-1794017986650",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 4068.02,
+  "stop": 4054.95,
+  "target": 4094.1600000000003,
+  "score": 7,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Stochastique",
+    "v": -2
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794017986650,
+  "source": "github"
+ },
+ {
   "id": "XAU-1794017074658",
   "sym": "XAU",
   "tf": "15m",
@@ -2665,22 +2722,5 @@
   "confidence": null,
   "t": 1793832526433,
   "source": "github"
- },
- {
-  "id": "test-1793828718835",
-  "sym": "BTC",
-  "tf": "1m",
-  "dir": 1,
-  "entry": 80194.01,
-  "stop": 79953.42796999999,
-  "target": 80675.17405999999,
-  "score": 0,
-  "details": [],
-  "news": "",
-  "confidence": null,
-  "t": 1793828718835,
-  "source": "github",
-  "reason": "Notification de test. Tu peux toucher « Accepter » pour essayer le suivi du trade (compte fictif) : tu recevras la confirmation dans les 5 à 15 minutes.",
-  "status": "accepted"
  }
 ]
