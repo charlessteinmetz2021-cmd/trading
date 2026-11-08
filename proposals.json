@@ -1,5 +1,58 @@
 [
  {
+  "id": "XAU-1794115886028",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 4059.92,
+  "stop": 4061.4450000101865,
+  "target": 4056.869999979627,
+  "score": -8,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
+  "confidence": null,
+  "t": 1794115886028,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794115280444",
   "sym": "BTC",
   "tf": "15m",
@@ -2631,59 +2684,6 @@
   "reason": "8 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1793928640128,
-  "source": "github"
- },
- {
-  "id": "BTC-1793928639931",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 76069.37,
-  "stop": 76562.34387224982,
-  "target": 75083.42225550034,
-  "score": -7,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Stochastique",
-    "v": -2
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Average Hourly Earnings m/m ven. 14:30 ; Non-Farm Employment Change ven. 14:30 ; Unemployment Rate ven. 14:30.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Stochastique, Supertrend, VWAP.",
-  "confidence": null,
-  "t": 1793928639931,
   "source": "github"
  }
 ]
