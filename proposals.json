@@ -1,5 +1,54 @@
 [
  {
+  "id": "BTC-1794105296616",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 75734,
+  "stop": 75924,
+  "target": 75354,
+  "score": -7,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Parabolic SAR, VWAP, Imbalance.",
+  "confidence": null,
+  "t": 1794105296616,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794104376920",
   "sym": "BTC",
   "tf": "15m",
@@ -2647,59 +2696,6 @@
   "reason": "8 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1793882046012,
-  "source": "github"
- },
- {
-  "id": "BTC-1793881130459",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 80241.92,
-  "stop": 80513.31,
-  "target": 79699.14,
-  "score": -7,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1793881130459,
   "source": "github"
  }
 ]
