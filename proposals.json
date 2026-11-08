@@ -1,5 +1,54 @@
 [
  {
+  "id": "BTC-1794109593166",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 75869.94,
+  "stop": 75726.13,
+  "target": 76157.56,
+  "score": 6,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "7 méthodes sur 8 vont dans le même sens : EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
+  "confidence": null,
+  "t": 1794109593166,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794106217966",
   "sym": "BTC",
   "tf": "15m",
@@ -2639,63 +2688,6 @@
   "reason": "7 méthodes sur 10 vont dans le même sens : EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1793882960589,
-  "source": "github"
- },
- {
-  "id": "BTC-1793882960328",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 79698,
-  "stop": 79946.0122671352,
-  "target": 79201.9754657296,
-  "score": -6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Bollinger",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1793882960328,
   "source": "github"
  }
 ]
