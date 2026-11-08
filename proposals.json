@@ -1,5 +1,58 @@
 [
  {
+  "id": "BTC-1794104376920",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 75695.61,
+  "stop": 75779.21823761998,
+  "target": 75528.39352476005,
+  "score": -9,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -1
+   },
+   {
+    "name": "MACD",
+    "v": -2
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Structure",
+    "v": -2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794104376920,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794027719756",
   "sym": "BTC",
   "tf": "15m",
@@ -2647,59 +2700,6 @@
   "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1793881130459,
-  "source": "github"
- },
- {
-  "id": "XAU-1793880826160",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 4126.32,
-  "stop": 4110.51,
-  "target": 4157.939999999999,
-  "score": 7,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Stochastique",
-    "v": -2
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
-  "confidence": null,
-  "t": 1793880826160,
   "source": "github"
  }
 ]
