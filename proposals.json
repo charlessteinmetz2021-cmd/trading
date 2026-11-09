@@ -1,5 +1,62 @@
 [
  {
+  "id": "NAS-1794182638959",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 26944.25,
+  "stop": 27258,
+  "target": 26316.75,
+  "score": -10,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Bollinger",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Structure",
+    "v": -2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "9 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794182638959,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794125876605",
   "sym": "BTC",
   "tf": "15m",
@@ -2619,59 +2676,6 @@
   "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, Parabolic SAR, VWAP.",
   "confidence": null,
   "t": 1793935903786,
-  "source": "github"
- },
- {
-  "id": "XAU-1793934996844",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 4045.36,
-  "stop": 4063.3218649512683,
-  "target": 4009.436270097464,
-  "score": -9,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Average Hourly Earnings m/m ven. 14:30 ; Non-Farm Employment Change ven. 14:30 ; Unemployment Rate ven. 14:30.",
-  "reason": "8 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1793934996844,
   "source": "github"
  }
 ]
