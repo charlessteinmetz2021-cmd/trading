@@ -1,5 +1,58 @@
 [
  {
+  "id": "NAS-1794188402584",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 26951.5,
+  "stop": 27199,
+  "target": 26456.5,
+  "score": -9,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Structure",
+    "v": -2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794188402584,
+  "source": "github"
+ },
+ {
   "id": "XAU-1794188098013",
   "sym": "XAU",
   "tf": "15m",
@@ -2638,59 +2691,6 @@
   "reason": "8 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1794012308950,
-  "source": "github"
- },
- {
-  "id": "XAU-1794010774415",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 4062.08,
-  "stop": 4052.58,
-  "target": 4081.08,
-  "score": 6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
-  "confidence": null,
-  "t": 1794010774415,
   "source": "github"
  }
 ]
