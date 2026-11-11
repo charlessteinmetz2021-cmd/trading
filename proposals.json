@@ -1,5 +1,58 @@
 [
  {
+  "id": "NAS-1794357226736",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 27929.25,
+  "stop": 27830.478049124173,
+  "target": 28126.793901751655,
+  "score": 8,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, Imbalance.",
+  "confidence": null,
+  "t": 1794357226736,
+  "source": "github"
+ },
+ {
   "id": "NAS-1794356305067",
   "sym": "NAS",
   "tf": "15m",
@@ -2670,55 +2723,6 @@
   "reason": "8 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
   "confidence": null,
   "t": 1794116794645,
-  "source": "github"
- },
- {
-  "id": "BTC-1794116189070",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 75877.93,
-  "stop": 75655.76,
-  "target": 76322.26999999999,
-  "score": 7,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Imbalance",
-    "v": 1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 8 vont dans le même sens : EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Imbalance.",
-  "confidence": null,
-  "t": 1794116189070,
   "source": "github"
  }
 ]
