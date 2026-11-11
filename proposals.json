@@ -1,5 +1,107 @@
 [
  {
+  "id": "NAS-1794359068322",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 27988.5,
+  "stop": 27897.397937036367,
+  "target": 28170.704125927266,
+  "score": 8,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
+  "confidence": null,
+  "t": 1794359068322,
+  "source": "github"
+ },
+ {
+  "id": "BTC-1794359067851",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 73537.69,
+  "stop": 74055.71,
+  "target": 72501.65,
+  "score": -9,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
+  "confidence": null,
+  "t": 1794359067851,
+  "source": "github"
+ },
+ {
   "id": "NAS-1794358146792",
   "sym": "NAS",
   "tf": "15m",
@@ -2617,112 +2719,6 @@
   "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
   "confidence": null,
   "t": 1794124061013,
-  "source": "github"
- },
- {
-  "id": "XAU-1794118610729",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 4060.01,
-  "stop": 4061.3347376174856,
-  "target": 4057.3605247650294,
-  "score": -8,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "8 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
-  "confidence": null,
-  "t": 1794118610729,
-  "source": "github"
- },
- {
-  "id": "XAU-1794117702469",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 4059.92,
-  "stop": 4061.3351020495998,
-  "target": 4057.0897959008007,
-  "score": -6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Imbalance",
-    "v": 1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
-  "confidence": null,
-  "t": 1794117702469,
   "source": "github"
  }
 ]
