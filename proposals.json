@@ -1,5 +1,58 @@
 [
  {
+  "id": "NAS-1794358146792",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 27980,
+  "stop": 27884.179234390813,
+  "target": 28171.641531218374,
+  "score": 8,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
+  "confidence": null,
+  "t": 1794358146792,
+  "source": "github"
+ },
+ {
   "id": "NAS-1794357226736",
   "sym": "NAS",
   "tf": "15m",
@@ -2670,59 +2723,6 @@
   "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
   "confidence": null,
   "t": 1794117702469,
-  "source": "github"
- },
- {
-  "id": "XAU-1794116794645",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 4059.92,
-  "stop": 4061.3435714380303,
-  "target": 4057.0728571239397,
-  "score": -8,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "8 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
-  "confidence": null,
-  "t": 1794116794645,
   "source": "github"
  }
 ]
