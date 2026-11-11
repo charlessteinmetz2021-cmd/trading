@@ -1,11 +1,11 @@
 {
  "day": "2026-11-11",
- "count": 14,
+ "count": 16,
  "lastSig": {
-  "BTC": "1794358800:-1",
+  "BTC": "1794362400:-1",
   "XAU": "1794361500:1",
-  "NAS": "1794361500:1"
+  "NAS": "1794362400:1"
  },
  "ctlSince": "RdVmvvV8xG6b",
- "mainSince": "g5gfCXuAnw4p"
+ "mainSince": "9pQCbpiQrUrE"
 }

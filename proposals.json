@@ -1,5 +1,111 @@
 [
  {
+  "id": "NAS-1794363673905",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 28073.25,
+  "stop": 27976.73937282518,
+  "target": 28266.27125434964,
+  "score": 10,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "9 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
+  "confidence": null,
+  "t": 1794363673905,
+  "source": "github"
+ },
+ {
+  "id": "BTC-1794363367191",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 73444.31,
+  "stop": 74055.71,
+  "target": 72221.50999999998,
+  "score": -7,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -1
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, VWAP, Imbalance.",
+  "confidence": null,
+  "t": 1794363367191,
+  "source": "github"
+ },
+ {
   "id": "NAS-1794362753411",
   "sym": "NAS",
   "tf": "15m",
@@ -2597,124 +2703,6 @@
   "reason": "9 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1794185368318,
-  "source": "github"
- },
- {
-  "id": "XAU-1794185368182",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 4095.03,
-  "stop": 4082.4673488527014,
-  "target": 4120.155302294597,
-  "score": 6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Bollinger",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Structure",
-    "v": 2
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794185368182,
-  "source": "github"
- },
- {
-  "id": "NAS-1794184458091",
-  "sym": "NAS",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 27013,
-  "stop": 27258,
-  "target": 26523,
-  "score": -8,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Stochastique",
-    "v": 2
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "9 méthodes sur 11 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, Structure, Imbalance.",
-  "confidence": null,
-  "t": 1794184458091,
   "source": "github"
  }
 ]
