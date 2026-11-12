@@ -1,5 +1,58 @@
 [
  {
+  "id": "BTC-1794448921540",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 73714.6,
+  "stop": 74058.41950936402,
+  "target": 73026.96098127199,
+  "score": -6,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
+  "confidence": null,
+  "t": 1794448921540,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794448012336",
   "sym": "BTC",
   "tf": "15m",
@@ -2638,59 +2691,6 @@
   "reason": "7 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, Parabolic SAR, Imbalance.",
   "confidence": null,
   "t": 1794270738892,
-  "source": "github"
- },
- {
-  "id": "NAS-1794268920843",
-  "sym": "NAS",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 28065.5,
-  "stop": 27972,
-  "target": 28252.5,
-  "score": 6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Imbalance",
-    "v": 1
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core CPI m/m mar. 14:30 ; CPI m/m mar. 14:30.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, VWAP, Imbalance.",
-  "confidence": null,
-  "t": 1794268920843,
   "source": "github"
  }
 ]
