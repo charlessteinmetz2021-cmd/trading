@@ -1,5 +1,58 @@
 [
  {
+  "id": "XAU-1794454525269",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 3977.71,
+  "stop": 3995.96,
+  "target": 3941.21,
+  "score": -7,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -1
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
+  "confidence": null,
+  "t": 1794454525269,
+  "source": "github"
+ },
+ {
   "id": "XAU-1794453607410",
   "sym": "XAU",
   "tf": "15m",
@@ -2646,51 +2699,6 @@
   "reason": "8 méthodes sur 11 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1794279773075,
-  "source": "github"
- },
- {
-  "id": "BTC-1794279772744",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 74863.96,
-  "stop": 75442.01,
-  "target": 73707.86000000003,
-  "score": -7,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core CPI m/m mar. 14:30 ; CPI m/m mar. 14:30.",
-  "reason": "7 méthodes sur 7 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
-  "confidence": null,
-  "t": 1794279772744,
   "source": "github"
  }
 ]
