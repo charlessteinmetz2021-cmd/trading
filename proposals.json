@@ -1,5 +1,111 @@
 [
  {
+  "id": "NAS-1794530004285",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 28541,
+  "stop": 28302,
+  "target": 29019,
+  "score": 7,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Core PPI m/m ven. 14:30 ; PPI m/m ven. 14:30.",
+  "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR.",
+  "confidence": null,
+  "t": 1794530004285,
+  "source": "github"
+ },
+ {
+  "id": "BTC-1794530003833",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 71220.37,
+  "stop": 72076.98,
+  "target": 69507.15,
+  "score": -8,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Bollinger",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Structure",
+    "v": -2
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Core PPI m/m ven. 14:30 ; PPI m/m ven. 14:30.",
+  "reason": "8 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794530003833,
+  "source": "github"
+ },
+ {
   "id": "NAS-1794529081868",
   "sym": "NAS",
   "tf": "15m",
@@ -2549,116 +2655,6 @@
   "reason": "9 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Imbalance.",
   "confidence": null,
   "t": 1794284390859,
-  "source": "github"
- },
- {
-  "id": "NAS-1794283468352",
-  "sym": "NAS",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 27912.25,
-  "stop": 28109,
-  "target": 27518.75,
-  "score": -6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 1
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core CPI m/m mar. 14:30 ; CPI m/m mar. 14:30.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794283468352,
-  "source": "github"
- },
- {
-  "id": "XAU-1794283468197",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 4099.86,
-  "stop": 4110.013344918157,
-  "target": 4079.5533101636856,
-  "score": -8,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   },
-   {
-    "name": "Imbalance",
-    "v": 1
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core CPI m/m mar. 14:30 ; CPI m/m mar. 14:30.",
-  "reason": "8 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794283468197,
   "source": "github"
  }
 ]
