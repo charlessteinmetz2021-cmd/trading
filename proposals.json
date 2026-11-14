@@ -1,5 +1,119 @@
 [
  {
+  "id": "XAU-1794623525615",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 3868.86,
+  "stop": 3883.28,
+  "target": 3840.02,
+  "score": -12,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -2
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": -1
+   },
+   {
+    "name": "Bollinger",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": -2
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Structure",
+    "v": -2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "9 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794623525615,
+  "source": "github"
+ },
+ {
+  "id": "BTC-1794623525349",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 67281.31,
+  "stop": 67718.18751607963,
+  "target": 66407.55496784073,
+  "score": -9,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -2
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Bollinger",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Structure",
+    "v": -2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "8 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794623525349,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794622607005",
   "sym": "BTC",
   "tf": "15m",
@@ -2493,112 +2607,6 @@
   "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1794365209093,
-  "source": "github"
- },
- {
-  "id": "NAS-1794364595470",
-  "sym": "NAS",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 28100.25,
-  "stop": 28006.40084619481,
-  "target": 28287.94830761038,
-  "score": 9,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Structure",
-    "v": 2
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794364595470,
-  "source": "github"
- },
- {
-  "id": "XAU-1794364287736",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 4039.58,
-  "stop": 4021.4,
-  "target": 4075.9399999999996,
-  "score": 6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Structure",
-    "v": 2
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794364287736,
   "source": "github"
  }
 ]
