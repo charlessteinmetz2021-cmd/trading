@@ -1,6 +1,10 @@
 // Atelier de trading : simulation, graphique maison, dessins, indicateurs et analyse par Claude.
 import * as I from "./indicators.js";
 import { scoreMarket as scoreMarketShared } from "./signals.js";
+import "./formation.js";
+
+// Méthode de la formation de l'utilisatrice (voir formation.js), rappelée à Claude dans ses analyses.
+const METHODE = " Méthode que suit l'utilisatrice (formation smart money) : 1) biais par la structure (HH/HL ou LH/LL, un HL n'est validé que quand le HH est cassé, BOS, orderflow = dernier sommet ou creux à casser) ; 2) POI de la grande unité de temps dans le sens du biais (order block = dernière bougie inverse avant l'expansion qui a cassé la structure, zone d'offre / demande avec imbalance non comblée, taille proportionnelle au mouvement, liquidité prise avant) ; 3) attendre que le prix entre dans le POI puis chercher le signal dans l'unité de temps du POI divisée par 30 (accumulation et entrée sur le Test, distribution et entrée sur le LPSY, ou BOS dans le sens du POI) ; 4) entrée limite sur un POI de la petite unité de temps ou sur le bloc institutionnel après le BOS, stop derrière la structure ; 5) stop remonté sur le dernier creux / sommet sans gap quand l'orderflow d'entrée casse ; 6) objectif sur l'orderflow pour une continuation, sur un POI pour un retracement. Liquidité : sommets et creux égaux, inducement. Setup à haute probabilité = structure claire, POI impulsif de tendance, confluence de plusieurs unités de temps, forte liquidité, manipulation nette. Utilise ce vocabulaire en l'expliquant simplement.";
 const $ = id => document.getElementById(id);
 const LC = window.LightweightCharts;
 
@@ -819,7 +823,7 @@ async function reviewTrade(t) {
     const resp = await client.beta.messages.create({
       model: "claude-opus-5-5", max_tokens: 4000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
       output_config: { effort: "low", format: { type: "json_schema", schema: REVIEW_SCHEMA } },
-      system: "Tu es le coach d'une personne qui s'entraîne au trading avec de l'argent fictif. Juge le trade qu'elle vient de prendre, en français simple et bref.",
+      system: "Tu es le coach d'une personne qui s'entraîne au trading avec de l'argent fictif. Juge le trade qu'elle vient de prendre, en français simple et bref. Dis si le trade respecte sa méthode." + METHODE,
       messages: [{ role: "user", content: `Trade : ${t.dir === 1 ? "achat" : "vente"} ${t.qty} ${MARKETS[cur].name} (${t.kind === "limit" ? "ordre limite" : "au marché"}) à ${t.entry}, stop ${t.sl ?? "aucun"}, objectif ${t.tp ?? "aucun"}. Unité de temps ${TF.find(x => x[0] === tf)[1]}. Compte ${usd(equity())}. Risque ${risk ? usd(risk) + " (" + fmt(risk / equity() * 100, 2) + " %)" : "illimité, pas de stop"}, gain visé ${gain ? usd(gain) : "non défini"}.
 Indicateurs :
 ${indicatorSnapshot()}
@@ -865,7 +869,7 @@ ${csv}`;
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
-      system: "Tu aides une personne qui apprend le trading sur un simulateur avec de l'argent fictif. Analyse le graphique fourni comme un trader expérimenté et pédagogue : structure du marché, supports et résistances, tendances. Écris en français simple, sans jargon non expliqué. Les niveaux et lignes doivent correspondre à des prix réellement visibles dans les bougies. Pour l'idée de trade, donne un stop logique et un objectif avec un ratio risque/rendement d'au moins 1,5, ou réponds « aucun » s'il n'y a pas de configuration claire. Si l'utilisateur a des positions ou des traits, commente-les.",
+      system: "Tu aides une personne qui apprend le trading sur un simulateur avec de l'argent fictif. Analyse le graphique fourni comme un trader expérimenté et pédagogue : structure du marché, supports et résistances, tendances. Écris en français simple, sans jargon non expliqué. Les niveaux et lignes doivent correspondre à des prix réellement visibles dans les bougies. Pour l'idée de trade, donne un stop logique et un objectif avec un ratio risque/rendement d'au moins 1,5, ou réponds « aucun » s'il n'y a pas de configuration claire. Si l'utilisateur a des positions ou des traits, commente-les." + METHODE,
       messages: [{ role: "user", content: prompt }],
     });
     if (resp.stop_reason === "refusal") throw new Error("Claude a refusé cette demande.");

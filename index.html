@@ -129,7 +129,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 </head><body>
 <div class="wrap">
   <header>
-    <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><h1>Atelier de trading</h1><span class="badge">Simulation, argent fictif</span></div>
+    <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><h1>Atelier de trading</h1><span class="badge">Simulation, argent fictif</span><a class="link" href="#formation">Formation, méthode et outils ↓</a></div>
     <div class="account">
       <div><small>Solde</small><b id="aBal">–</b></div>
       <div><small>Valeur du compte</small><b id="aEq">–</b></div>
@@ -312,9 +312,11 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
       <button class="link" id="cUse">Reporter dans le ticket d'ordre</button>
     </section>
   </div>
+
+  <section class="formation" id="formation" aria-labelledby="tForm"></section>
 </div>
 
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script type="module" src="app.js?v=20261106c"></script>
+<script type="module" src="app.js?v=20261113a"></script>
 </body></html>
