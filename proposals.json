@@ -1,5 +1,66 @@
 [
  {
+  "id": "XAU-1794713494432",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 3827.19,
+  "stop": 3786.51,
+  "target": 3908.5499999999997,
+  "score": 8,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Stochastique",
+    "v": -2
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "9 méthodes sur 11 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure, Imbalance.",
+  "confidence": null,
+  "t": 1794713494432,
+  "source": "github"
+ },
+ {
   "id": "BTC-1794712575621",
   "sym": "BTC",
   "tf": "15m",
@@ -2590,55 +2651,6 @@
   "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, Parabolic SAR, VWAP.",
   "confidence": null,
   "t": 1794528159791,
-  "source": "github"
- },
- {
-  "id": "XAU-1794456354222",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 3978.49,
-  "stop": 3995.96,
-  "target": 3943.5499999999993,
-  "score": -9,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "8 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Imbalance.",
-  "confidence": null,
-  "t": 1794456354222,
   "source": "github"
  }
 ]
