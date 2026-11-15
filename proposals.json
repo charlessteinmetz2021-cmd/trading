@@ -1,5 +1,62 @@
 [
  {
+  "id": "XAU-1794714411575",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 3825.05,
+  "stop": 3786.51,
+  "target": 3902.13,
+  "score": 10,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "9 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure, Imbalance.",
+  "confidence": null,
+  "t": 1794714411575,
+  "source": "github"
+ },
+ {
   "id": "XAU-1794713494432",
   "sym": "XAU",
   "tf": "15m",
@@ -2602,55 +2659,6 @@
   "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
   "confidence": null,
   "t": 1794528160281,
-  "source": "github"
- },
- {
-  "id": "BTC-1794528159791",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 71460,
-  "stop": 72076.98,
-  "target": 70226.04000000001,
-  "score": -7,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core PPI m/m ven. 14:30 ; PPI m/m ven. 14:30.",
-  "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, Parabolic SAR, VWAP.",
-  "confidence": null,
-  "t": 1794528159791,
   "source": "github"
  }
 ]
