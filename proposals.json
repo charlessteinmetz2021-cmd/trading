@@ -1,5 +1,99 @@
 [
  {
+  "id": "XAU-1794790957640",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 3878.11,
+  "stop": 3866.7977260319667,
+  "target": 3900.734547936067,
+  "score": 9,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Fed Chairman Warsh Speaks lun. 18:00.",
+  "reason": "8 méthodes sur 9 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794790957640,
+  "source": "github"
+ },
+ {
+  "id": "BTC-1794790957301",
+  "sym": "BTC",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 64924.01,
+  "stop": 65508.86,
+  "target": 63754.310000000005,
+  "score": -7,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Fed Chairman Warsh Speaks lun. 18:00.",
+  "reason": "6 méthodes sur 6 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, MACD, Supertrend, Parabolic SAR, VWAP.",
+  "confidence": null,
+  "t": 1794790957301,
+  "source": "github"
+ },
+ {
   "id": "NAS-1794790651306",
   "sym": "NAS",
   "tf": "15m",
@@ -2605,108 +2699,6 @@
   "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
   "confidence": null,
   "t": 1794614656317,
-  "source": "github"
- },
- {
-  "id": "XAU-1794535345942",
-  "sym": "XAU",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 3907.04,
-  "stop": 3896.8457094272003,
-  "target": 3927.4285811455993,
-  "score": 6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Bollinger",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   },
-   {
-    "name": "Structure",
-    "v": 2
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core PPI m/m ven. 14:30 ; PPI m/m ven. 14:30.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : EMA 9/21, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794535345942,
-  "source": "github"
- },
- {
-  "id": "NAS-1794534736736",
-  "sym": "NAS",
-  "tf": "15m",
-  "dir": 1,
-  "entry": 28551.75,
-  "stop": 28302,
-  "target": 29051.25,
-  "score": 9,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": 1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": 1
-   },
-   {
-    "name": "Ichimoku",
-    "v": 2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": 1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": 1
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core PPI m/m ven. 14:30 ; PPI m/m ven. 14:30.",
-  "reason": "8 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
-  "confidence": null,
-  "t": 1794534736736,
   "source": "github"
  }
 ]
