@@ -1,5 +1,107 @@
 [
  {
+  "id": "NAS-1794795546622",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": -1,
+  "entry": 27969,
+  "stop": 28279.25,
+  "target": 27348.5,
+  "score": -6,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": -1
+   },
+   {
+    "name": "Ichimoku",
+    "v": -1
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "Supertrend",
+    "v": -1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": -1
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Fed Chairman Warsh Speaks lun. 18:00.",
+  "reason": "7 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP.",
+  "confidence": null,
+  "t": 1794795546622,
+  "source": "github"
+ },
+ {
+  "id": "XAU-1794795546161",
+  "sym": "XAU",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 3874.98,
+  "stop": 3840.37,
+  "target": 3944.2000000000003,
+  "score": 6,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": -1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": -1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Imbalance",
+    "v": 1
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Fed Chairman Warsh Speaks lun. 18:00.",
+  "reason": "7 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, VWAP, Imbalance.",
+  "confidence": null,
+  "t": 1794795546161,
+  "source": "github"
+ },
+ {
   "id": "NAS-1794794630027",
   "sym": "NAS",
   "tf": "15m",
@@ -2601,116 +2703,6 @@
   "reason": "9 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1794623525615,
-  "source": "github"
- },
- {
-  "id": "BTC-1794623525349",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 67281.31,
-  "stop": 67718.18751607963,
-  "target": 66407.55496784073,
-  "score": -9,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -2
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Bollinger",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "8 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794623525349,
-  "source": "github"
- },
- {
-  "id": "BTC-1794622607005",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 68184.01,
-  "stop": 68501.49347885499,
-  "target": 67549.04304229001,
-  "score": -6,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": 1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Imbalance",
-    "v": -1
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "7 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, RSI, Supertrend, VWAP, Imbalance.",
-  "confidence": null,
-  "t": 1794622607005,
   "source": "github"
  }
 ]
