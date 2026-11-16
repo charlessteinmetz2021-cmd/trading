@@ -14,5 +14,6 @@
     "trail": true,
     "pyramid": true,
     "addRisk": 0.005
-  }
+  },
+  "cooldownMin": 60
 }

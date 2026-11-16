@@ -129,7 +129,7 @@ if (process.env.TEST_NOTIF === "true") {
 // 3) chercher de nouveaux trades
 const scores = {};
 async function scan() {
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }); // journée à l'heure de Paris
 if (state.day !== today) { state.day = today; state.count = 0; }
 for (const sym of cfg.markets) {
   const m = MARKETS[sym];
@@ -141,7 +141,7 @@ for (const sym of cfg.markets) {
     scores[sym] = sc.score;
     const sig = `${b[b.length - 1].time}:${Math.sign(sc.score)}`;
     log(sym, "score", sc.score, sc.details.map(x => `${x.name}:${x.v}`).join(" "));
-    const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < 15 * 60000);
+    const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < (cfg.cooldownMin || 60) * 60000); // au plus une proposition par marché et par heure
     if (Math.abs(sc.score) < cfg.minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
     state.lastSig[sym] = sig;
     const cc = calendarCheck();
