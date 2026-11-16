@@ -5,8 +5,8 @@
     "NAS"
   ],
   "timeframe": "15m",
-  "minScore": 6,
-  "maxPerDay": 20,
+  "minScore": 8,
+  "maxPerDay": 6,
   "checkNews": true,
   "siteUrl": "https://charlessteinmetz2021-cmd.github.io/trading/",
   "manage": {
@@ -15,5 +15,20 @@
     "pyramid": true,
     "addRisk": 0.005
   },
-  "cooldownMin": 60
+  "cooldownMin": 90,
+  "goalPips": {
+    "min": 100,
+    "max": 150,
+    "stopLoss": 100
+  },
+  "pip": {
+    "BTC": 1,
+    "XAU": 0.1,
+    "NAS": 1
+  },
+  "usOpen": {
+    "from": "15:00",
+    "to": "16:15"
+  },
+  "usOpenGuard": "15:20"
 }

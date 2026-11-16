@@ -89,7 +89,7 @@ async function notify(p) {
   await send({
     priority: 4, tags: [p.dir === 1 ? "chart_with_upwards_trend" : "chart_with_downwards_trend"],
     title: `${p.dir === 1 ? "Achat" : "Vente"} ${m.name} proposé`,
-    message: `Entrée ${f(p.entry)} · SL ${f(p.stop)} · TP ${f(p.target)}${p.confidence ? ` · confiance ${p.confidence}/10` : ""}\n${p.reason}`,
+    message: `Entrée ${f(p.entry)} · SL ${f(p.stop)} · TP ${f(p.target)} (+${Math.round(Math.abs(p.target - p.entry) / ({ BTC: 1, XAU: 0.1, NAS: 1, ...(cfg.pip || {}) })[p.sym])} pips)${p.confidence ? ` · confiance ${p.confidence}/10` : ""}${state.pips ? `\nAujourd'hui : ${state.pips.done >= 0 ? "+" : ""}${state.pips.done} pips sur un objectif de ${(cfg.goalPips || {}).min || 100}-${(cfg.goalPips || {}).max || 150}` : ""}\n${p.reason}`,
     actions: proposalActions(p, cfg.siteUrl),
   });
 }
@@ -128,9 +128,44 @@ if (process.env.TEST_NOTIF === "true") {
 }
 // 3) chercher de nouveaux trades
 const scores = {};
+// Pips : or 0,10 $, Nasdaq 1 point, Bitcoin 1 $ (réglable dans assistant-config.json)
+const PIP = { BTC: 1, XAU: 0.1, NAS: 1, ...(cfg.pip || {}) };
+const pipsOf = (p, to) => ((to - p.entry) * p.dir) / PIP[p.sym];
+const parisNow = () => { const s = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }); return { day: s.slice(0, 10), hm: s.slice(11, 16), wd: new Date(s.replace(" ", "T")).getDay() }; };
+const parisDay = t => new Date(t).toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
+// Objectif du jour en pips (gagnés sur les trades fermés aujourd'hui) + prudence autour de l'ouverture américaine
+async function dayGate() {
+  const g = { min: 100, max: 150, stopLoss: 100, ...(cfg.goalPips || {}) }, now = parisNow();
+  const done = acc.history.filter(h => parisDay(h.closedAt) === now.day).reduce((s, h) => s + pipsOf(h, h.exit), 0);
+  const inPlay = acc.positions.reduce((s, p) => s + Math.max(0, pipsOf(p, p.target)), 0);
+  state.pips = { day: now.day, done: Math.round(done), inPlay: Math.round(inPlay) };
+  const once = async (key, msg) => { if (state[key] === now.day) return; state[key] = now.day; await send(msg); };
+  if (done >= g.min) { await once("goalSent", { title: `🎯 Objectif du jour atteint : +${Math.round(done)} pips`, message: "Je n'envoie plus de propositions aujourd'hui. Mieux vaut garder ce gain que forcer. Reprise demain.", priority: 4, tags: ["trophy"] }); return "objectif du jour atteint"; }
+  if (done <= -g.stopLoss) { await once("lossSent", { title: `Journée arrêtée : ${Math.round(done)} pips`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour atteinte"; }
+  if (done + inPlay >= g.min) return `assez de trades en cours pour l'objectif (${Math.round(done)} gagnés + ${Math.round(inPlay)} en jeu)`;
+  const us = { from: "15:00", to: "16:15", ...(cfg.usOpen || {}) };
+  if (now.wd >= 1 && now.wd <= 5 && now.hm >= us.from && now.hm < us.to) return "ouverture américaine : pas de nouveau trade";
+  return null;
+}
+// Avant l'ouverture américaine (15 h 30 Paris) : les trades en gain passent au point d'entrée, et je te préviens
+async function usOpenGuard() {
+  const now = parisNow(), at = cfg.usOpenGuard || "15:20";
+  if (now.wd < 1 || now.wd > 5 || now.hm < at || now.hm >= "15:30" || state.usGuard === now.day) return;
+  state.usGuard = now.day;
+  const lines = [];
+  for (const p of acc.positions) {
+    const pips = p.last != null ? pipsOf(p, p.last) : 0;
+    if (pips > 0 && (p.stop - p.entry) * p.dir < 0) { p.stop = p.entry + p.dir * 0.05 * p.R; p.locked = p.locked ?? 0.05; lines.push(`• ${MARKETS[p.sym].name} (+${Math.round(pips)} pips) : stop loss remonté au point d'entrée`); }
+    else lines.push(`• ${MARKETS[p.sym].name} (${Math.round(pips)} pips) : à surveiller, ça peut bouger fort`);
+  }
+  await send({ title: "⚠️ Ouverture américaine dans 10 minutes", message: (lines.length ? lines.join("\n") + "\n" : "") + "Je ne propose aucun nouveau trade jusqu'à 16 h 15, le temps que le marché se calme.", priority: 4, tags: ["us"] });
+}
 async function scan() {
 const today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }); // journée à l'heure de Paris
 if (state.day !== today) { state.day = today; state.count = 0; }
+try { await usOpenGuard(); } catch (e) { log("ouverture US : erreur", e?.message || e); }
+const gate = await dayGate();
+if (gate) log("pas de nouvelle proposition :", gate);
 for (const sym of cfg.markets) {
   const m = MARKETS[sym];
   try {
@@ -142,7 +177,7 @@ for (const sym of cfg.markets) {
     const sig = `${b[b.length - 1].time}:${Math.sign(sc.score)}`;
     log(sym, "score", sc.score, sc.details.map(x => `${x.name}:${x.v}`).join(" "));
     const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < (cfg.cooldownMin || 60) * 60000); // au plus une proposition par marché et par heure
-    if (Math.abs(sc.score) < cfg.minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
+    if (gate || Math.abs(sc.score) < cfg.minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
     state.lastSig[sym] = sig;
     const cc = calendarCheck();
     if (cc.block) { log(sym, "signal ignoré :", cc.text); continue; }
