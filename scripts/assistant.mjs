@@ -179,9 +179,12 @@ function lotAdvice(p, W) {
   const cap = r.capital * (acc.balance / state.warmBal); // ton capital suit les résultats du compte du serveur
   const risk = W.good ? r.riskAfter : r.riskWarm, dist = Math.abs(p.entry - p.stop) * r.lotUnit;
   const lot = Math.floor(((cap * risk) / dist) * 100) / 100;
-  if (lot < r.minLot) return `Lot conseillé : ${r.minLot} (le minimum). Risque ≈ ${(r.minLot * dist).toFixed(2)} ${r.cur}, soit ${Math.round((r.minLot * dist) / cap * 100)} % de ton capital : plus que conseillé, ne monte pas au-dessus.`;
+  if (lot < r.minLot) { const rk = r.minLot * dist, pc = Math.round((rk / cap) * 100);
+    return `Lot conseillé : ${r.minLot} (le minimum). Risque ≈ ${rk.toFixed(2)} ${r.cur}, soit ${pc} % de ton capital${rk > cap * risk * 1.5 ? " : c'est plus que conseillé, ne monte surtout pas au-dessus" : ""}.`; }
   return `Lot conseillé : ${lot.toFixed(2)} (risque ≈ ${(lot * dist).toFixed(2)} ${r.cur}, ${Math.round(risk * 100)} % de ton capital ≈ ${cap.toFixed(0)} ${r.cur}).`;
 }
+// stop au point d'entrée plus tôt pendant le démarrage
+const markBe = () => { const W = warmup(); for (const p of acc.positions) if (p.beAt == null) p.beAt = W.inWarm ? W.breakeven : (cfg.manage?.breakeven ?? 1); };
 async function scan() {
 const today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }); // journée à l'heure de Paris
 if (state.day !== today) { state.day = today; state.count = 0; }
@@ -241,8 +244,6 @@ for (const sym of cfg.markets) {
     log(sym, "proposition envoyée", JSON.stringify(p));
   } catch (e) { log(sym, "erreur", e?.message || e); }
 }
-// stop au point d'entrée plus tôt pendant le démarrage
-const markBe = () => { const W = warmup(); for (const p of acc.positions) if (p.beAt == null) p.beAt = W.inWarm ? W.breakeven : (cfg.manage?.breakeven ?? 1); };
 // 4) sécuriser les trades ouverts (stop au point d'entrée, stop suiveur, renfort)
 markBe(); try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) { log("gestion : erreur", e?.stack || e); }
 saveAccount(acc);
