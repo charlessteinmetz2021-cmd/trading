@@ -181,14 +181,14 @@ export async function manage({ acc, scores, cfg, markets }) {
     if (p.last == null || !p.R) continue;
     const m = markets[p.sym], r = ((p.last - p.entry) * p.dir) / p.R, notes = [];
     let lock = p.locked ?? null; // en R
-    if (r >= M.breakeven && lock == null) { lock = 0.05; notes.push(`stop loss remonté au point d'entrée (${px(p.entry + p.dir * 0.05 * p.R)}) : ce trade ne peut plus perdre, sauf saut brutal du prix`); }
+    if (r >= (p.beAt ?? M.breakeven) && lock == null) { lock = 0.05; notes.push(`stop loss remonté au point d'entrée (${px(p.entry + p.dir * 0.05 * p.R)}) : ce trade ne peut plus perdre, sauf saut brutal du prix`); }
     if (M.trail && r >= 2 && lock != null && r - 1 > lock + 0.25) { lock = Math.floor((r - 1) * 4) / 4; notes.push(`stop loss remonté à ${px(p.entry + p.dir * lock * p.R)} : ${money(lock * p.R * p.qty)} de gain sont garantis`); }
     if (lock != null && lock !== p.locked) {
       p.locked = lock; p.stop = p.entry + p.dir * lock * p.R;
       for (const a of acc.positions) if (a.parent === p.id && (p.stop - a.stop) * p.dir > 0) a.stop = p.stop; // le renfort suit le stop du trade principal
     }
     const sc = scores[p.sym];
-    if (M.pyramid && !p.isAdd && !p.added && r >= M.breakeven && sc != null && Math.sign(sc) === p.dir && Math.abs(sc) >= (cfg.minScore || 6) / 2) {
+    if (M.pyramid && !p.isAdd && !p.added && r >= Math.max(1, p.beAt ?? M.breakeven) && sc != null && Math.sign(sc) === p.dir && Math.abs(sc) >= (cfg.minScore || 6) / 2) {
       const R = Math.abs(p.last - p.entry), target = p.entry + p.dir * 3 * p.R;
       const add = { id: `${p.id}+`, prop: p.prop || p.id, sym: p.sym, dir: p.dir, qty: (acc.balance * M.addRisk) / R, entry: p.last, stop: p.entry, target, R, lev: p.lev,
         isAdd: true, parent: p.id, openedAt: Date.now(), checkedTo: p.checkedTo, lastPnlNotif: Date.now(), last: p.last, pnl: 0 };

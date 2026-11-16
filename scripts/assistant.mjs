@@ -162,12 +162,34 @@ async function usOpenGuard() {
   }
   await send({ title: "⚠️ Ouverture américaine dans 10 minutes", message: (lines.length ? lines.join("\n") + "\n" : "") + "Je ne propose aucun nouveau trade jusqu'à 16 h 15, le temps que le marché se calme.", priority: 4, tags: ["us"] });
 }
+// Démarrage : tes 10 premiers trades sont filtrés plus sévèrement et protégés plus tôt ;
+// ensuite, si les résultats sont bons, le lot conseillé augmente (risque 1 % puis 2 % du capital).
+function warmup() {
+  const w = { trades: 10, since: 0, minScore: 10, breakeven: 0.7, ...(cfg.warmup || {}) };
+  const mine = x => !x.isAdd && !String(x.id).startsWith("test") && (x.openedAt || 0) >= w.since;
+  const closed = acc.history.filter(mine), open = acc.positions.filter(mine).length;
+  const wins = closed.filter(h => h.pnl > 0).length, pnl = closed.reduce((s, h) => s + h.pnl, 0);
+  const n = closed.length + open, inWarm = n < w.trades;
+  const good = !inWarm && closed.length && wins / closed.length >= 0.6 && pnl > 0;
+  return { ...w, n, inWarm, good, wins, closed: closed.length, pnl };
+}
+function lotAdvice(p, W) {
+  const r = { capital: 100, cur: "€", lotUnit: 1, minLot: 0.01, riskWarm: 0.01, riskAfter: 0.02, ...(cfg.real || {}) };
+  if (!state.warmBal) state.warmBal = acc.balance;
+  const cap = r.capital * (acc.balance / state.warmBal); // ton capital suit les résultats du compte du serveur
+  const risk = W.good ? r.riskAfter : r.riskWarm, dist = Math.abs(p.entry - p.stop) * r.lotUnit;
+  const lot = Math.floor(((cap * risk) / dist) * 100) / 100;
+  if (lot < r.minLot) return `Lot conseillé : ${r.minLot} (le minimum). Risque ≈ ${(r.minLot * dist).toFixed(2)} ${r.cur}, soit ${Math.round((r.minLot * dist) / cap * 100)} % de ton capital : plus que conseillé, ne monte pas au-dessus.`;
+  return `Lot conseillé : ${lot.toFixed(2)} (risque ≈ ${(lot * dist).toFixed(2)} ${r.cur}, ${Math.round(risk * 100)} % de ton capital ≈ ${cap.toFixed(0)} ${r.cur}).`;
+}
 async function scan() {
 const today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }); // journée à l'heure de Paris
 if (state.day !== today) { state.day = today; state.count = 0; }
 try { await usOpenGuard(); } catch (e) { log("ouverture US : erreur", e?.message || e); }
 const gate = await dayGate();
 if (gate) log("pas de nouvelle proposition :", gate);
+const W = warmup(), minScore = W.inWarm || !W.good ? Math.max(cfg.minScore, W.minScore) : cfg.minScore;
+log(`démarrage : ${W.n}/${W.trades} trades, ${W.wins}/${W.closed} gagnants, score exigé ${minScore}`);
 for (const sym of cfg.markets) {
   const m = MARKETS[sym];
   try {
@@ -179,11 +201,15 @@ for (const sym of cfg.markets) {
     const sig = `${b[b.length - 1].time}:${Math.sign(sc.score)}`;
     log(sym, "score", sc.score, sc.details.map(x => `${x.name}:${x.v}`).join(" "));
     const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < (cfg.cooldownMin || 60) * 60000); // au plus une proposition par marché et par heure
-    if (gate || Math.abs(sc.score) < cfg.minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
+    if (gate || Math.abs(sc.score) < minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
     state.lastSig[sym] = sig;
     const cc = calendarCheck();
     if (cc.block) { log(sym, "signal ignoré :", cc.text); continue; }
     const dir = sc.score > 0 ? 1 : -1;
+    if (W.inWarm || !W.good) { // confirmation par la tendance d'une heure
+      const h = scoreMarket((await fetchCandles(m, "1h")).slice(0, -1), 3600, 0).score;
+      if (Math.sign(h) !== dir || Math.abs(h) < 4) { log(sym, `ignoré : la tendance 1 h ne confirme pas (score ${h})`); continue; }
+    }
     let stop = dir === 1 ? Math.min(sc.px - 1.5 * sc.atr, sc.pl ?? Infinity) : Math.max(sc.px + 1.5 * sc.atr, sc.ph ?? -Infinity);
     if (!isFinite(stop) || Math.abs(sc.px - stop) > 4 * sc.atr) stop = sc.px - dir * 1.5 * sc.atr;
     let p = { id: `${sym}-${Date.now()}`, sym, tf: cfg.timeframe, dir, entry: sc.px, stop, target: sc.px + dir * 2 * Math.abs(sc.px - stop), score: sc.score,
@@ -208,13 +234,17 @@ for (const sym of cfg.markets) {
     const tpPips = Math.abs(p.target - p.entry) / PIP[sym], slPips = Math.abs(p.stop - p.entry) / PIP[sym];
     if (tpPips > left) { p.target = p.entry + p.dir * left * PIP[sym]; log(sym, `objectif ramené à ${Math.round(left)} pips`); }
     if (Math.abs(p.target - p.entry) / PIP[sym] < 1.5 * slPips) { log(sym, `ignoré : ${Math.round(Math.min(tpPips, left))} pips à gagner pour ${Math.round(slPips)} pips de risque, pas assez`); continue; }
+    p.lot = lotAdvice(p, W);
+    p.reason = `${W.inWarm ? `Trade ${W.n + 1}/${W.trades} de démarrage (sélection renforcée). ` : ""}${p.reason}\n${p.lot}`;
     proposals.unshift(p); state.count++;
     await notify(p);
     log(sym, "proposition envoyée", JSON.stringify(p));
   } catch (e) { log(sym, "erreur", e?.message || e); }
 }
+// stop au point d'entrée plus tôt pendant le démarrage
+const markBe = () => { const W = warmup(); for (const p of acc.positions) if (p.beAt == null) p.beAt = W.inWarm ? W.breakeven : (cfg.manage?.breakeven ?? 1); };
 // 4) sécuriser les trades ouverts (stop au point d'entrée, stop suiveur, renfort)
-try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) { log("gestion : erreur", e?.stack || e); }
+markBe(); try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) { log("gestion : erreur", e?.stack || e); }
 saveAccount(acc);
 save();
 }
@@ -240,7 +270,7 @@ function commit(force) {
 for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { log("arrêt demandé, j'enregistre"); commit(true); process.exit(0); });
 do {
   if (Date.now() - lastScan >= 5 * 60000) { lastScan = Date.now(); await scan(); }
-  else { await follow(); try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) {} saveAccount(acc); save(); }
+  else { await follow(); markBe(); try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) {} saveAccount(acc); save(); }
   commit();
   if (LOOP) await sleep(20000);
 } while (Date.now() < end);

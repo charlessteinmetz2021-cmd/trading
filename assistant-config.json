@@ -32,5 +32,19 @@
   "window": {
     "from": "16:00",
     "to": "22:00"
+  },
+  "warmup": {
+    "trades": 10,
+    "since": 1794856322058,
+    "minScore": 10,
+    "breakeven": 0.7
+  },
+  "real": {
+    "capital": 100,
+    "cur": "€",
+    "lotUnit": 1,
+    "minLot": 0.01,
+    "riskWarm": 0.01,
+    "riskAfter": 0.01
   }
 }
