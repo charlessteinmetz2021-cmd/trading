@@ -133,11 +133,20 @@ const PIP = { BTC: 1, XAU: 0.1, NAS: 1, ...(cfg.pip || {}) };
 const pipsOf = (p, to) => ((to - p.entry) * p.dir) / PIP[p.sym];
 const parisNow = () => { const s = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }); return { day: s.slice(0, 10), hm: s.slice(11, 16), wd: new Date(s.replace(" ", "T")).getDay() }; };
 const parisDay = t => new Date(t).toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
+// Séance de nuit (00 h-3 h) : ses trades ne comptent pas dans l'objectif de 150 pips
+const isNight = x => /-N\d/.test(String(x.prop || x.id));
 // Objectif du jour en pips (gagnés sur les trades fermés aujourd'hui) + prudence autour de l'ouverture américaine
+// « connectée » = le site est ouvert et relié (il envoie un signal toutes les 2 minutes)
+async function connected() {
+  try {
+    const r = await fetch(`https://ntfy.sh/${process.env.NTFY_TOPIC}-presence/json?poll=1&since=6m`);
+    return r.ok && (await r.text()).includes('"event":"message"');
+  } catch (e) { return false; }
+}
 async function dayGate() {
   const g = { min: 100, max: 150, stopLoss: 100, ...(cfg.goalPips || {}) }, now = parisNow();
-  const done = acc.history.filter(h => parisDay(h.closedAt) === now.day).reduce((s, h) => s + pipsOf(h, h.exit), 0);
-  const inPlay = acc.positions.reduce((s, p) => s + Math.max(0, pipsOf(p, p.target)), 0);
+  const done = acc.history.filter(h => parisDay(h.closedAt) === now.day && !isNight(h)).reduce((s, h) => s + pipsOf(h, h.exit), 0);
+  const inPlay = acc.positions.filter(p => !isNight(p)).reduce((s, p) => s + Math.max(0, pipsOf(p, p.target)), 0);
   state.pips = { day: now.day, done: Math.round(done), inPlay: Math.round(inPlay) };
   const once = async (key, msg) => { if (state[key] === now.day) return; state[key] = now.day; await send(msg); };
   if (done >= g.min) { await once("goalSent", { title: `🎯 Objectif du jour atteint : +${Math.round(done)} pips`, message: "Je n'envoie plus de propositions aujourd'hui. Mieux vaut garder ce gain que forcer. Reprise demain.", priority: 4, tags: ["trophy"] }); return "objectif du jour atteint"; }
@@ -146,6 +155,14 @@ async function dayGate() {
   const openRisk = acc.positions.reduce((s, p) => s + Math.max(0, (p.entry - p.stop) * p.dir * p.qty), 0), maxLoss = (cfg.maxDayLossPct ?? 2) / 100 * startBal;
   if (dayPnl <= -maxLoss) { await once("lossSent", { title: `Journée arrêtée : ${dayPnl.toFixed(2)} $ (−${cfg.maxDayLossPct ?? 2} %)`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour (2 %) atteinte"; }
   if (dayPnl - openRisk - 0.01 * acc.balance < -maxLoss - 0.01) return "un trade de plus pourrait dépasser 2 % de perte aujourd'hui";
+  const n = cfg.night; // { from: "00:00", to: "03:00" }
+  if (n && now.hm >= n.from && now.hm < n.to) {
+    const nightProps = proposals.filter(p => isNight(p) && parisDay(p.t) === now.day);
+    if (!nightProps.length) return { night: true }; // première proposition de la nuit : toujours envoyée
+    const accepted = [...acc.positions, ...acc.history].some(x => isNight(x) && parisDay(x.openedAt) === now.day);
+    if (accepted || await connected()) return { night: true };
+    return "nuit : j'attends que tu acceptes la première proposition ou que tu ouvres le site";
+  }
   if (done <= -g.stopLoss) { await once("lossSent", { title: `Journée arrêtée : ${Math.round(done)} pips`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour atteinte"; }
   if (done + inPlay >= g.min) return `assez de trades en cours pour l'objectif (${Math.round(done)} gagnés + ${Math.round(inPlay)} en jeu)`;
   const w = cfg.window; // tes heures de trading (heure de Paris)
@@ -192,10 +209,11 @@ function lotAdvice(p, W) {
 const markBe = () => { const W = warmup(); for (const p of acc.positions) if (p.beAt == null) p.beAt = W.inWarm ? W.breakeven : (cfg.manage?.breakeven ?? 1); };
 async function scan() {
 const today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }); // journée à l'heure de Paris
-if (state.day !== today) { state.day = today; state.count = 0; }
+if (state.day !== today) { state.day = today; state.count = 0; state.nightCount = 0; }
 try { await usOpenGuard(); } catch (e) { log("ouverture US : erreur", e?.message || e); }
-const gate = await dayGate();
-if (gate) log("pas de nouvelle proposition :", gate);
+let gate = await dayGate();
+const night = gate?.night; if (night) gate = null;
+if (gate) log("pas de nouvelle proposition :", gate); else if (night) log("séance de nuit");
 const W = warmup(), minScore = W.inWarm || !W.good ? Math.max(cfg.minScore, W.minScore) : cfg.minScore;
 log(`démarrage : ${W.n}/${W.trades} trades, ${W.wins}/${W.closed} gagnants, score exigé ${minScore}`);
 for (const sym of cfg.markets) {
@@ -209,7 +227,7 @@ for (const sym of cfg.markets) {
     const sig = `${b[b.length - 1].time}:${Math.sign(sc.score)}`;
     log(sym, "score", sc.score, sc.details.map(x => `${x.name}:${x.v}`).join(" "));
     const pending = proposals.some(p => p.sym === sym && !p.id.startsWith("test") && Date.now() - p.t < (cfg.cooldownMin || 60) * 60000); // au plus une proposition par marché et par heure
-    if (gate || Math.abs(sc.score) < minScore || state.lastSig[sym] === sig || pending || state.count >= cfg.maxPerDay) continue;
+    if (gate || Math.abs(sc.score) < minScore || state.lastSig[sym] === sig || pending || (!night && state.count >= cfg.maxPerDay) || (night && (state.nightCount || 0) >= (cfg.night.max || 3))) continue;
     state.lastSig[sym] = sig;
     const cc = calendarCheck();
     if (cc.block) { log(sym, "signal ignoré :", cc.text); continue; }
@@ -244,7 +262,8 @@ for (const sym of cfg.markets) {
     if (Math.abs(p.target - p.entry) / PIP[sym] < 1.5 * slPips) { log(sym, `ignoré : ${Math.round(Math.min(tpPips, left))} pips à gagner pour ${Math.round(slPips)} pips de risque, pas assez`); continue; }
     p.lot = lotAdvice(p, W);
     p.reason = `${W.inWarm ? `Trade ${W.n + 1}/${W.trades} de démarrage (sélection renforcée). ` : ""}${p.reason}\n${p.lot}`;
-    proposals.unshift(p); state.count++;
+    if (night) { p.id = `${sym}-N${Date.now()}`; p.reason = `🌙 Séance de nuit (hors objectif de 150 pips). ${p.reason}`; state.nightCount = (state.nightDay === state.day ? state.nightCount || 0 : 0) + 1; state.nightDay = state.day; }
+    proposals.unshift(p); if (!night) state.count++;
     await notify(p);
     log(sym, "proposition envoyée", JSON.stringify(p));
   } catch (e) { log(sym, "erreur", e?.message || e); }

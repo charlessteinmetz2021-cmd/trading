@@ -47,5 +47,10 @@
     "riskWarm": 0.01,
     "riskAfter": 0.01
   },
-  "maxDayLossPct": 2
+  "maxDayLossPct": 2,
+  "night": {
+    "from": "00:00",
+    "to": "03:00",
+    "max": 3
+  }
 }

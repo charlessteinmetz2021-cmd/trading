@@ -1234,6 +1234,12 @@ $("qClose").onclick = async () => {
 };
 setInterval(updateCloseAll, 1000);
 
+// signal de présence pour la séance de nuit : le serveur sait que le site est ouvert (sujet séparé, sans notification)
+function presence() {
+  const t = topic(); if (!t || document.hidden) return;
+  fetch("https://ntfy.sh/" + encodeURIComponent(t + "-presence"), { method: "POST", body: "connectée" }).catch(() => {});
+}
+presence(); setInterval(presence, 120000); document.addEventListener("visibilitychange", presence);
 function setupTopic() {
   const inp = $("ntfyTopic"), st = $("ntfyState");
   const show = () => { st.textContent = topic() ? "✓ Relié : ce que tu acceptes ou fermes ici passe par le serveur, comme sur ton téléphone." : "Pas encore relié : les propositions acceptées ici restent sur le simulateur de ce PC."; };
