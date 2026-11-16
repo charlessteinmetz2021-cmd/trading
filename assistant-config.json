@@ -15,9 +15,9 @@
   },
   "cooldownMin": 90,
   "goalPips": {
-    "min": 100,
+    "min": 150,
     "max": 150,
-    "stopLoss": 100
+    "stopLoss": 100000
   },
   "pip": {
     "BTC": 10,
@@ -46,5 +46,6 @@
     "minLot": 0.01,
     "riskWarm": 0.01,
     "riskAfter": 0.01
-  }
+  },
+  "maxDayLossPct": 2
 }

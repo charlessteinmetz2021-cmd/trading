@@ -89,7 +89,7 @@ async function notify(p) {
   await send({
     priority: 4, tags: [p.dir === 1 ? "chart_with_upwards_trend" : "chart_with_downwards_trend"],
     title: `${p.dir === 1 ? "Achat" : "Vente"} ${m.name} proposé`,
-    message: `Entrée ${f(p.entry)} · SL ${f(p.stop)} · TP ${f(p.target)} (+${Math.round(Math.abs(p.target - p.entry) / ({ BTC: 1, XAU: 0.1, NAS: 1, ...(cfg.pip || {}) })[p.sym])} pips)${p.confidence ? ` · confiance ${p.confidence}/10` : ""}${state.pips ? `\nAujourd'hui : ${state.pips.done >= 0 ? "+" : ""}${state.pips.done} pips sur un objectif de ${(cfg.goalPips || {}).min || 100}-${(cfg.goalPips || {}).max || 150}` : ""}\n${p.reason}`,
+    message: `Entrée ${f(p.entry)} · SL ${f(p.stop)} · TP ${f(p.target)} (+${Math.round(Math.abs(p.target - p.entry) / ({ BTC: 1, XAU: 0.1, NAS: 1, ...(cfg.pip || {}) })[p.sym])} pips)${p.confidence ? ` · confiance ${p.confidence}/10` : ""}${state.pips ? `\nAujourd'hui : ${state.pips.done >= 0 ? "+" : ""}${state.pips.done} pips sur un objectif de ${(cfg.goalPips || {}).max || 150}` : ""}\n${p.reason}`,
     actions: proposalActions(p, cfg.siteUrl),
   });
 }
@@ -141,6 +141,11 @@ async function dayGate() {
   state.pips = { day: now.day, done: Math.round(done), inPlay: Math.round(inPlay) };
   const once = async (key, msg) => { if (state[key] === now.day) return; state[key] = now.day; await send(msg); };
   if (done >= g.min) { await once("goalSent", { title: `🎯 Objectif du jour atteint : +${Math.round(done)} pips`, message: "Je n'envoie plus de propositions aujourd'hui. Mieux vaut garder ce gain que forcer. Reprise demain.", priority: 4, tags: ["trophy"] }); return "objectif du jour atteint"; }
+  // perte maximale du jour : 2 % du compte (trades fermés + risque des trades encore ouverts)
+  const dayPnl = acc.history.filter(h => parisDay(h.closedAt) === now.day).reduce((s, h) => s + h.pnl, 0), startBal = acc.balance - dayPnl;
+  const openRisk = acc.positions.reduce((s, p) => s + Math.max(0, (p.entry - p.stop) * p.dir * p.qty), 0), maxLoss = (cfg.maxDayLossPct ?? 2) / 100 * startBal;
+  if (dayPnl <= -maxLoss) { await once("lossSent", { title: `Journée arrêtée : ${dayPnl.toFixed(2)} $ (−${cfg.maxDayLossPct ?? 2} %)`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour (2 %) atteinte"; }
+  if (dayPnl - openRisk - 0.01 * acc.balance < -maxLoss - 0.01) return "un trade de plus pourrait dépasser 2 % de perte aujourd'hui";
   if (done <= -g.stopLoss) { await once("lossSent", { title: `Journée arrêtée : ${Math.round(done)} pips`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour atteinte"; }
   if (done + inPlay >= g.min) return `assez de trades en cours pour l'objectif (${Math.round(done)} gagnés + ${Math.round(inPlay)} en jeu)`;
   const w = cfg.window; // tes heures de trading (heure de Paris)
