@@ -1,8 +1,6 @@
 {
   "markets": [
-    "BTC",
-    "XAU",
-    "NAS"
+    "BTC"
   ],
   "timeframe": "15m",
   "minScore": 8,
@@ -22,7 +20,7 @@
     "stopLoss": 100
   },
   "pip": {
-    "BTC": 1,
+    "BTC": 10,
     "XAU": 0.1,
     "NAS": 1
   },
@@ -30,5 +28,9 @@
     "from": "15:00",
     "to": "16:15"
   },
-  "usOpenGuard": "15:20"
+  "usOpenGuard": "15:20",
+  "window": {
+    "from": "16:00",
+    "to": "22:00"
+  }
 }

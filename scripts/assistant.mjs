@@ -143,6 +143,8 @@ async function dayGate() {
   if (done >= g.min) { await once("goalSent", { title: `🎯 Objectif du jour atteint : +${Math.round(done)} pips`, message: "Je n'envoie plus de propositions aujourd'hui. Mieux vaut garder ce gain que forcer. Reprise demain.", priority: 4, tags: ["trophy"] }); return "objectif du jour atteint"; }
   if (done <= -g.stopLoss) { await once("lossSent", { title: `Journée arrêtée : ${Math.round(done)} pips`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour atteinte"; }
   if (done + inPlay >= g.min) return `assez de trades en cours pour l'objectif (${Math.round(done)} gagnés + ${Math.round(inPlay)} en jeu)`;
+  const w = cfg.window; // tes heures de trading (heure de Paris)
+  if (w && !(now.hm >= w.from && now.hm < w.to)) return `en dehors de tes heures (${w.from}-${w.to})`;
   const us = { from: "15:00", to: "16:15", ...(cfg.usOpen || {}) };
   if (now.wd >= 1 && now.wd <= 5 && now.hm >= us.from && now.hm < us.to) return "ouverture américaine : pas de nouveau trade";
   return null;
@@ -201,6 +203,11 @@ for (const sym of cfg.markets) {
       p = { ...p, dir: dec.direction === "achat" ? 1 : -1, entry: dec.entry, stop: dec.stop, target: dec.target, reason: dec.reason, confidence: dec.confidence, news: n.trim() };
     }
     if ((p.stop - p.entry) * p.dir >= 0 || (p.target - p.entry) * p.dir <= 0) { log(sym, "niveaux incohérents, ignoré"); continue; }
+    // objectif précis : l'objectif du trade ne dépasse pas ce qu'il reste à faire pour atteindre le haut de l'objectif du jour
+    const gp = { min: 100, max: 150, ...(cfg.goalPips || {}) }, left = gp.max - (state.pips?.done || 0) - (state.pips?.inPlay || 0);
+    const tpPips = Math.abs(p.target - p.entry) / PIP[sym], slPips = Math.abs(p.stop - p.entry) / PIP[sym];
+    if (tpPips > left) { p.target = p.entry + p.dir * left * PIP[sym]; log(sym, `objectif ramené à ${Math.round(left)} pips`); }
+    if (Math.abs(p.target - p.entry) / PIP[sym] < 1.5 * slPips) { log(sym, `ignoré : ${Math.round(Math.min(tpPips, left))} pips à gagner pour ${Math.round(slPips)} pips de risque, pas assez`); continue; }
     proposals.unshift(p); state.count++;
     await notify(p);
     log(sym, "proposition envoyée", JSON.stringify(p));
