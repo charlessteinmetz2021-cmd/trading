@@ -1,5 +1,62 @@
 [
  {
+  "id": "NAS-1794790651306",
+  "sym": "NAS",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 28184.5,
+  "stop": 28047.605134326303,
+  "target": 28458.289731347395,
+  "score": 8,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": -1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   },
+   {
+    "name": "Imbalance",
+    "v": -1
+   }
+  ],
+  "news": "Prochaines annonces importantes (USD) : Fed Chairman Warsh Speaks lun. 18:00.",
+  "reason": "8 méthodes sur 10 vont dans le même sens : EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.",
+  "confidence": null,
+  "t": 1794790651306,
+  "source": "github"
+ },
+ {
   "id": "XAU-1794790039277",
   "sym": "XAU",
   "tf": "15m",
@@ -2650,59 +2707,6 @@
   "reason": "8 méthodes sur 8 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP.",
   "confidence": null,
   "t": 1794534736736,
-  "source": "github"
- },
- {
-  "id": "BTC-1794534736356",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 70972,
-  "stop": 71376.33781674951,
-  "target": 70163.32436650098,
-  "score": -9,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -1
-   },
-   {
-    "name": "RSI",
-    "v": -1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": 1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   }
-  ],
-  "news": "Prochaines annonces importantes (USD) : Core PPI m/m ven. 14:30 ; PPI m/m ven. 14:30.",
-  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794534736356,
   "source": "github"
  }
 ]
