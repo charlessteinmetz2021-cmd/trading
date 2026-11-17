@@ -1,17 +1,17 @@
 {
  "start": 10000,
  "balance": 10000,
- "open": 59.27951388888889,
+ "open": 57.718098958333336,
  "last": {
   "XAU": 3846.71,
-  "BTC": 63747.25,
-  "NAS": 26893.296875
+  "BTC": 63796.84,
+  "NAS": 26896.107421875
  },
  "ctx": {
   "XAU": {
    "30min": [
     3845.09,
-    3851.67
+    3850.87
    ],
    "2h": [
     3845.09,
@@ -39,7 +39,7 @@
   "NAS": {
    "30min": [
     26857.904296875,
-    26919.095703125
+    26915.296875
    ],
    "2h": [
     26850.03515625,
@@ -110,7 +110,7 @@
    "closeBy": "2026-11-17T20:30:00Z",
    "reason": "Correction du trade 1 : BTC a cassé le bas du range 64 000 sans repasser par ma zone de vente. Nouvelle vente sur le retest de l'ancien support 64 000-64 250 (devenu résistance), stop au-dessus de 64 900, objectif 62 300 dans la zone de liquidations. R:R ≈ 3.",
    "status": "pending",
-   "last": 63747.25
+   "last": 63796.84
   },
   {
    "id": "CLA-NAS-3b",
@@ -127,9 +127,9 @@
    "openedAt": 1794935940000,
    "qty": 0.5555555555555556,
    "status": "open",
-   "last": 26893.296875,
-   "pnl": 59.27951388888889
+   "last": 26896.107421875,
+   "pnl": 57.718098958333336
   }
  ],
- "updated": 1794942520175
+ "updated": 1794942582840
 }
