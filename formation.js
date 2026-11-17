@@ -155,6 +155,25 @@ const FICHES = [
 <li><b>Le trading est ton activité principale</b> : il faut déclarer une entreprise (CFE / guichet unique), plusieurs régimes possibles (entreprise individuelle, etc.).</li>
 <li>Un compte chez un broker à l'étranger se déclare chaque année (formulaire 3916).</li>
 </ul>` },
+  { id: "oral", t: "15. Ce que disent les vidéos (points oraux)", h: `
+<p>Explications données à l'oral dans les 19 vidéos du mentorat, qui ne sont pas sur les diapositives.</p>
+<ul>
+<li><b>Lire des mouvements, pas des bougies.</b> Une mèche peut contenir tout un mouvement inverse : c'est le mouvement qui fait la zone, pas la couleur.</li>
+<li><b>Le low protégé n'est pas forcément le plus bas.</b> C'est le bas du dernier mouvement baissier qui a comblé l'imbalance et lancé l'impulsion qui casse le high. S'il reste de l'imbalance sous un creux, ce n'est pas lui.</li>
+<li><b>Un retracement fait une nouvelle structure</b> s'il est assez profond (repère 30 à 50 % de l'expansion) ou s'il dure longtemps. Sinon ce n'est qu'une structure de petite UT.</li>
+<li><b>BOS franc</b> : un corps de bougie nettement au-delà. Une mèche qui dépasse à peine est souvent une prise de liquidité avant retournement.</li>
+<li><b>Sommets égaux (EQH)</b> : deux hauts au même niveau ou un 2e haut un peu plus bas = beaucoup de liquidité au-dessus, le prix ira la chercher. Évite une supply avec des EQH parfaits juste au-dessus (et une demand avec des EQL juste en dessous).</li>
+<li><b>Au moins deux prises de liquidité</b> dans la manipulation (ST-B puis spring, ou UT puis UTAD) avant le retournement, puis BOS, puis entrée sur le retest. Entre avant que le prix ait quitté le tiers de la manipulation.</li>
+<li><b>La mitigation n'est jamais totale.</b> Un retour peu profond ne referme qu'une partie des ordres : le prix revient souvent plus profond plus tard. Le temps n'invalide pas une zone (elle peut tenir des années).</li>
+<li><b>Règle des 30, côté pratique</b> : dans une UT trop petite on voit des distributions partout et on prend plein de petits stops. Dans la bonne UT, une mauvaise zone ne donne en général aucun signal : pas de trade, ce n'est pas grave.</li>
+<li><b>Raffiner, 5 façons</b> : fractalité (descendre d'UT, souvent deux crans), 50 % de la zone, pic de volume, dernière mèche avant le gros mouvement, rogner le bord qui créerait des sommets égaux. Zone d'annonce économique : 50 % et volume seulement. Une zone ne doit jamais dépasser la moitié du mouvement.</li>
+<li><b>Double bloc</b> : dans la demand, un bloc baissier puis un bloc haussier qui le casse, achat au-dessus du 2e bloc, stop juste sous ce bloc (inverse pour vendre).</li>
+<li><b>Le stop est toujours au-delà de la zone.</b> Si la zone casse, le scénario est faux : on prend -1 R et on remet l'analyse à jour. Le marché a toujours raison.</li>
+<li><b>Risque modulé</b> : réduire (ex. 0,5 %) quand la liquidité est du mauvais côté, risque normal quand elle est du côté du trade.</li>
+<li><b>Gestion</b> : un partiel tôt (1:1) rend rentable une analyse qui ne se réalise qu'à moitié. Une analyse juste n'est pas toujours un trade gagnant, et l'inverse.</li>
+<li><b>Pas de trade sans momentum</b> : un prix qui ne bouge plus en 15 min, une journée pleine d'annonces ou la session asiatique (manipulations plus longues) donnent plus de trade stops.</li>
+<li><b>La discipline compte plus que la motivation.</b> Backteste avant de passer en réel.</li>
+</ul>` },
 ];
 
 // ---------------------------------------------------------------- méthode A→Z
@@ -167,6 +186,8 @@ const STEPS = [
   { t: "2. POI des grandes UT, puis attendre le prix", items: [
     "POI dans le sens du biais (demand si haussier, supply si baissier)",
     "Le POI contient de l'imbalance non comblée",
+    "Pas de sommets égaux juste au-dessus d'une supply (ou de creux égaux sous une demand)",
+    "Zone raffinée sans excès (jamais plus de la moitié du mouvement)",
     "Taille proportionnelle au mouvement, liquidité créée avant le départ",
     "Je ne fais rien tant que le prix n'est pas entré dans le POI",
   ] },
@@ -174,6 +195,7 @@ const STEPS = [
     "Le prix est dans le POI de la grande UT",
     "Je suis passé dans l'UT d'entrée (règle des 30)",
     "Signal présent : accumulation (Test), distribution (LPSY) ou BOS dans le sens du POI",
+    "Au moins deux prises de liquidité dans la manipulation, BOS franc (corps de bougie)",
   ] },
   { t: "4. Entrée en position", items: [
     "Ordre limite sur un POI de la petite UT après le BOS, ou exécution directe sur le bloc institutionnel",
@@ -227,6 +249,10 @@ const QUIZ = [
   { q: "Ton compte perd 50 %. Quel gain faut-il pour revenir ?", a: ["+50 %", "+100 %", "+75 %"], ok: 1, why: "La moitié du capital doit doubler." },
   { q: "Gestion par paliers (base 1 %) : tu as perdu 4 fois ton risque de base. Nouveau risque ?", a: ["2 %", "1 %", "0,5 %"], ok: 2, why: "Palier DD1 : le risque est divisé par deux." },
   { q: "Que vaut une zone raffinée au maximum ?", a: ["Meilleur ratio mais moins de chances d'être touchée", "Plus de chances d'être touchée", "Aucune différence"], ok: 0, why: "Raffiner, mais pas trop : on gagne en ratio et on perd en probabilité." },
+  { q: "Une supply a des sommets égaux parfaits juste au-dessus. Que faire ?", a: ["Vendre dans la supply, risque plein", "Se méfier : le prix ira probablement chercher cette liquidité au-dessus d'abord", "Acheter immédiatement"], ok: 1, why: "La liquidité au-dessus attire le prix : la zone est peu fiable tant qu'elle n'a pas été prise." },
+  { q: "Le high est dépassé par une simple mèche de quelques points. C'est…", a: ["Un BOS franc", "Probablement une prise de liquidité avant retournement", "Un signal d'achat certain"], ok: 1, why: "Un BOS valable se fait avec un corps de bougie nettement au-delà." },
+  { q: "Combien de prises de liquidité attend-on dans une manipulation avant le retournement ?", a: ["Aucune", "Au moins deux", "Exactement cinq"], ok: 1, why: "Par exemple ST-B puis spring pour une accumulation." },
+  { q: "Le prix casse franchement la zone où tu es entré. Que fais-tu ?", a: ["J'élargis le stop", "Je prends la perte prévue et je remets l'analyse à jour", "Je double la position"], ok: 1, why: "Le stop est au-delà de la zone : si elle casse, le scénario est invalide." },
 ];
 
 // ---------------------------------------------------------------- styles

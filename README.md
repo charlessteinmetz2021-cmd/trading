@@ -10,7 +10,7 @@ Site d'entraînement au trading, en simulation avec de l'argent fictif.
 - Panneau d'indicateurs : moyennes mobiles, EMA, Bollinger, Ichimoku, VWAP, Parabolic SAR, Supertrend, pivots, volume, RSI, MACD, stochastique, ATR
 - Analyse par Claude (clé API personnelle, stockée dans le navigateur) : lecture de chaque indicateur, niveaux tracés sur le graphique, idée de trade
 - Calculateur de taille de position et de ratio risque / rendement
-- Formation (synthèse des vidéos et PDF du cours) : méthode d'analyse A→Z à cocher avec score « setup à haute probabilité », 14 fiches de cours (structure, fractalité et règle des 30, offre/demande et POI, liquidité, order blocks, blocs institutionnels, gestion du stop et des objectifs, drawdown, spread, fiscalité), outils (taille de lot avec spread et commission et ajout d'actifs, niveaux TradingView → MT5, règle des 30, paliers de drawdown) et quiz. Claude analyse aussi selon cette méthode.
+- Formation (synthèse des vidéos et PDF du cours) : méthode d'analyse A→Z à cocher avec score « setup à haute probabilité », 15 fiches de cours (structure, fractalité et règle des 30, offre/demande et POI, liquidité, order blocks, blocs institutionnels, gestion du stop et des objectifs, drawdown, spread, fiscalité, et les points donnés à l’oral dans les vidéos), outils (taille de lot avec spread et commission et ajout d'actifs, niveaux TradingView → MT5, règle des 30, paliers de drawdown) et quiz. Claude analyse aussi selon cette méthode.
 
 ## Utilisation
 
