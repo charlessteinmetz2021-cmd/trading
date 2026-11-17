@@ -1,6 +1,6 @@
 {
- "day": "2026-11-17",
- "count": 1,
+ "day": "2026-11-18",
+ "count": 0,
  "lastSig": {
   "BTC": "1794933900:-1",
   "XAU": "1794795300:1",
@@ -9,11 +9,11 @@
  "ctlSince": "RdVmvvV8xG6b",
  "mainSince": "Snpwol0nXUOs",
  "pips": {
-  "day": "2026-11-17",
+  "day": "2026-11-18",
   "done": 0,
   "inPlay": 0
  },
- "nightCount": 1,
+ "nightCount": 0,
  "warmBal": 10377.817648169175,
  "nightDay": "2026-11-17",
  "usGuard": "2026-11-17"
