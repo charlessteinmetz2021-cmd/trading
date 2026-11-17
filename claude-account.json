@@ -1,20 +1,20 @@
 {
  "start": 10000,
  "balance": 10000,
- "open": 45.05533854166667,
+ "open": 49.12977430555556,
  "last": {
-  "XAU": 3851.67,
-  "BTC": 63819.31,
-  "NAS": 26918.900390625
+  "XAU": 3850,
+  "BTC": 63754.93,
+  "NAS": 26911.56640625
  },
  "ctx": {
   "XAU": {
    "30min": [
-    3850.61,
+    3850,
     3854.5
    ],
    "2h": [
-    3850.61,
+    3850,
     3863.11
    ],
    "6h": [
@@ -80,7 +80,7 @@
    "closeBy": "2026-11-17T20:30:00Z",
    "reason": "Échauffement 2/3. Or près de son plus bas sur un an, dollar fort, 96 % de chances de hausse Fed en décembre. Vente dans la zone 3 872-3 885 sous le plus haut du jour, stop au-dessus de 3 900. R:R ≈ 2,9. Prix suivi : PAXG.",
    "status": "pending",
-   "last": 3851.67
+   "last": 3850
   },
   {
    "id": "CLA-NAS-3",
@@ -110,7 +110,7 @@
    "closeBy": "2026-11-17T20:30:00Z",
    "reason": "Correction du trade 1 : BTC a cassé le bas du range 64 000 sans repasser par ma zone de vente. Nouvelle vente sur le retest de l'ancien support 64 000-64 250 (devenu résistance), stop au-dessus de 64 900, objectif 62 300 dans la zone de liquidations. R:R ≈ 3.",
    "status": "pending",
-   "last": 63819.31
+   "last": 63754.93
   },
   {
    "id": "CLA-NAS-3b",
@@ -127,9 +127,9 @@
    "openedAt": 1794935940000,
    "qty": 0.5555555555555556,
    "status": "open",
-   "last": 26918.900390625,
-   "pnl": 45.05533854166667
+   "last": 26911.56640625,
+   "pnl": 49.12977430555556
   }
  ],
- "updated": 1794940759388
+ "updated": 1794940821932
 }
