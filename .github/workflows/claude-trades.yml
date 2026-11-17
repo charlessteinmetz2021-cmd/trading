@@ -15,12 +15,12 @@ permissions:
 
 concurrency:
   group: claude-trades
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   suivi:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 340
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,14 +36,24 @@ jobs:
             const done = new Set(a.trades.filter(t => t.status === "closed" || t.status === "expired").map(t => t.id));
             console.log("todo=" + (o.some(x => !done.has(x.id)) ? 1 : 0));
           ' >> "$GITHUB_OUTPUT"
-      - name: Suivi des trades
+      - name: Suivi des trades (boucle d'une minute, 5 h 30 au plus)
         if: steps.check.outputs.todo == '1'
         run: |
           git config user.name "claude-trades"
           git config user.email "claude-trades@users.noreply.github.com"
-          node scripts/claude-trades.mjs
-          git add claude-account.json
-          git diff --cached --quiet && exit 0
-          git commit -q -m "Trades de Claude : suivi"
-          for i in 1 2 3 4; do git pull -q --rebase -X theirs origin main && git push -q origin main && exit 0; sleep $((i*5)); done
-          exit 1
+          end=$(( $(date +%s) + 330*60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            git pull -q --rebase -X theirs origin main || true
+            node scripts/claude-trades.mjs || true
+            git add claude-account.json
+            if ! git diff --cached --quiet; then
+              git commit -q -m "Trades de Claude : suivi"
+              for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q origin main && break; sleep 5; done
+            fi
+            node -e '
+              const fs = require("fs"), o = JSON.parse(fs.readFileSync("claude-orders.json")), a = JSON.parse(fs.readFileSync("claude-account.json"));
+              const done = new Set(a.trades.filter(t => t.status === "closed" || t.status === "expired").map(t => t.id));
+              process.exit(o.some(x => !done.has(x.id)) ? 0 : 1);
+            ' || break
+            sleep 60
+          done
