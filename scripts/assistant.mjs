@@ -150,19 +150,24 @@ async function dayGate() {
   state.pips = { day: now.day, done: Math.round(done), inPlay: Math.round(inPlay) };
   const once = async (key, msg) => { if (state[key] === now.day) return; state[key] = now.day; await send(msg); };
   if (done >= g.min) { await once("goalSent", { title: `🎯 Objectif du jour atteint : +${Math.round(done)} pips`, message: "Je n'envoie plus de propositions aujourd'hui. Mieux vaut garder ce gain que forcer. Reprise demain.", priority: 4, tags: ["trophy"] }); return "objectif du jour atteint"; }
-  // perte maximale du jour : 2 % du compte (trades fermés + risque des trades encore ouverts)
-  const dayPnl = acc.history.filter(h => parisDay(h.closedAt) === now.day).reduce((s, h) => s + h.pnl, 0), startBal = acc.balance - dayPnl;
-  const openRisk = acc.positions.reduce((s, p) => s + Math.max(0, (p.entry - p.stop) * p.dir * p.qty), 0), maxLoss = (cfg.maxDayLossPct ?? 2) / 100 * startBal;
-  if (dayPnl <= -maxLoss) { await once("lossSent", { title: `Journée arrêtée : ${dayPnl.toFixed(2)} $ (−${cfg.maxDayLossPct ?? 2} %)`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour (2 %) atteinte"; }
-  if (dayPnl - openRisk - 0.01 * acc.balance < -maxLoss - 0.01) return "un trade de plus pourrait dépasser 2 % de perte aujourd'hui";
-  const n = cfg.night; // { from: "00:00", to: "03:00" }
+  const n = cfg.night; // { from: "00:00", to: "03:00", maxLossPct }
   if (n && now.hm >= n.from && now.hm < n.to) {
+    // la nuit a sa propre limite de perte, séparée de celle de la journée
+    const nPnl = acc.history.filter(h => isNight(h) && parisDay(h.openedAt) === now.day).reduce((s, h) => s + h.pnl, 0);
+    const nRisk = acc.positions.filter(isNight).reduce((s, p) => s + Math.max(0, (p.entry - p.stop) * p.dir * p.qty), 0), nMax = (n.maxLossPct ?? 1) / 100 * (acc.balance - nPnl);
+    if (nPnl <= -nMax + 0.01) { await once("nightLossSent", { title: `🌙 Nuit arrêtée : ${nPnl.toFixed(2)} $`, message: `La perte maximale de la nuit (${n.maxLossPct ?? 1} %) est atteinte. Plus de propositions avant 16 h.`, priority: 4, tags: ["octagonal_sign"] }); return "perte maximale de la nuit atteinte"; }
+    if (nPnl - nRisk - 0.01 * acc.balance < -nMax - 0.01) return "nuit : un trade de plus pourrait dépasser la perte maximale de la nuit";
     const nightProps = proposals.filter(p => isNight(p) && parisDay(p.t) === now.day);
     if (!nightProps.length) return { night: true }; // première proposition de la nuit : toujours envoyée
     const accepted = [...acc.positions, ...acc.history].some(x => isNight(x) && parisDay(x.openedAt) === now.day);
     if (accepted || await connected()) return { night: true };
     return "nuit : j'attends que tu acceptes la première proposition ou que tu ouvres le site";
   }
+  // perte maximale du jour : 2 % du compte (trades fermés + risque des trades encore ouverts)
+  const dayPnl = acc.history.filter(h => parisDay(h.closedAt) === now.day && !isNight(h)).reduce((s, h) => s + h.pnl, 0), startBal = acc.balance - dayPnl;
+  const openRisk = acc.positions.filter(p => !isNight(p)).reduce((s, p) => s + Math.max(0, (p.entry - p.stop) * p.dir * p.qty), 0), maxLoss = (cfg.maxDayLossPct ?? 2) / 100 * startBal;
+  if (dayPnl <= -maxLoss) { await once("lossSent", { title: `Journée arrêtée : ${dayPnl.toFixed(2)} $ (−${cfg.maxDayLossPct ?? 2} %)`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour (2 %) atteinte"; }
+  if (dayPnl - openRisk - 0.01 * acc.balance < -maxLoss - 0.01) return "un trade de plus pourrait dépasser 2 % de perte aujourd'hui";
   if (done <= -g.stopLoss) { await once("lossSent", { title: `Journée arrêtée : ${Math.round(done)} pips`, message: "La perte maximale du jour est atteinte. Je n'envoie plus de propositions aujourd'hui pour protéger ton compte.", priority: 4, tags: ["octagonal_sign"] }); return "perte maximale du jour atteinte"; }
   if (done + inPlay >= g.min) return `assez de trades en cours pour l'objectif (${Math.round(done)} gagnés + ${Math.round(inPlay)} en jeu)`;
   const w = cfg.window; // tes heures de trading (heure de Paris)

@@ -51,6 +51,7 @@
   "night": {
     "from": "00:00",
     "to": "03:00",
-    "max": 3
+    "max": 3,
+    "maxLossPct": 1
   }
 }
