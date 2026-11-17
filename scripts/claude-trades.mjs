@@ -67,18 +67,20 @@ export async function run(feeds = FEEDS) {
   const orders = read("claude-orders.json", []);
   const prev = read("claude-account.json", { trades: [] });
   const done = new Map(prev.trades.filter(t => t.status === "closed" || t.status === "expired").map(t => [t.id, t]));
-  const cache = {}, trades = [], last = {};
+  const cache = {}, trades = [], last = {}, ctx = {};
   for (const o of orders) {
     if (done.has(o.id)) { trades.push(done.get(o.id)); continue; }
     try {
       const bars = await (cache[o.sym] ||= feeds[o.sym]());
       last[o.sym] = bars.length ? bars[bars.length - 1].close : null;
+      const range = m => { const b = bars.slice(-m); return b.length ? [Math.min(...b.map(x => x.low)), Math.max(...b.map(x => x.high))] : null; };
+      ctx[o.sym] = { "30min": range(30), "2h": range(120), "6h": range(360) };
       trades.push({ ...o, ...replay(o, bars) });
     } catch (e) { log(o.id, "prix indisponible", e?.message || e); const p = prev.trades.find(t => t.id === o.id); trades.push(p || { ...o, status: "pending" }); }
   }
   const realized = trades.filter(t => t.status === "closed").reduce((s, t) => s + t.pnl, 0);
   const open = trades.filter(t => t.status === "open").reduce((s, t) => s + t.pnl, 0);
-  const acc = { start: START, balance: START + realized, open, last, trades, updated: Date.now() };
+  const acc = { start: START, balance: START + realized, open, last, ctx, trades, updated: Date.now() };
   writeFileSync("claude-account.json", JSON.stringify(acc, null, 1));
   for (const t of trades) log(t.id, t.status, t.fill ?? "", t.exit ?? "", t.pnl != null ? t.pnl.toFixed(2) : "");
   return acc;

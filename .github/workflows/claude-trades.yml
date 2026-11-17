@@ -4,6 +4,7 @@ name: Trades de Claude
 # et enregistre le résultat dans claude-account.json (affiché par le site).
 on:
   push:
+    branches: [main]
     paths: ["claude-orders.json"]
   schedule:
     - cron: "*/5 * * * *"
