@@ -245,6 +245,12 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
         <p>Les réglages (marchés, unité de temps, exigence) sont dans le fichier <code>assistant-config.json</code> du dépôt.</p>
       </div>
     </details>
+    <div id="cla" class="srv" hidden>
+      <h3 style="margin:10px 0 6px;font-size:15px">🤖 Trades de Claude (entraînement, ouverts par Claude lui-même)</h3>
+      <p class="small" id="claSum"></p>
+      <div id="claPos" class="props"></div>
+      <details style="margin-top:6px" open><summary class="small">Terminés</summary><div id="claHist" class="small"></div></details>
+    </div>
     <div id="srv" class="srv" hidden>
       <h3 style="margin:10px 0 6px;font-size:15px">Trades suivis par le serveur (téléphone)</h3>
       <p class="small" id="srvSum"></p>

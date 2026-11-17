@@ -1247,6 +1247,32 @@ function setupTopic() {
   $("ntfySave").onclick = () => { try { const v = inp.value.trim().replace(/^https?:\/\/ntfy\.sh\//, ""); v ? localStorage.setItem(TOPIC_KEY, v) : localStorage.removeItem(TOPIC_KEY); } catch (e) {} show(); renderServer(); };
 }
 setupTopic();
+// ---------- compte d'entraînement de Claude (ordres passés par Claude, suivis par GitHub Actions) ----------
+let CLA = null;
+async function pullClaude() {
+  try { const r = await fetch(SITE + "claude-account.json?" + Date.now(), { cache: "no-store" }); if (r.ok) { CLA = await r.json(); renderClaude(); } } catch (e) {}
+}
+function renderClaude() {
+  if (!CLA) return;
+  const box = $("cla"); box.hidden = !CLA.trades.length; if (box.hidden) return;
+  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" }, hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const esc = x => String(x ?? "").replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
+  const live = CLA.trades.filter(t => t.status === "open" || t.status === "pending");
+  let open = 0;
+  $("claPos").innerHTML = live.map(t => {
+    const now = (t.sym !== "NAS" && price[t.sym]) || t.last;
+    const v = t.status === "open" && now != null ? (now - t.fill) * t.dir * t.qty : 0; open += v;
+    const head = `<b>${t.dir === 1 ? "Achat" : "Vente"} ${names[t.sym] || t.sym}</b>${t.status === "open" ? `ouvert à ${fmt(t.fill)} (${hm(t.openedAt)})` : `ordre limite à ${fmt(t.entry)}, en attente`} · SL ${fmt(t.stop)} · TP ${fmt(t.target)}`;
+    const pl = t.status === "open" ? `<br>Prix ${fmt(now)} · <span style="color:${v >= 0 ? "var(--gain)" : "var(--loss)"}">${v >= 0 ? "+" : ""}${fmt(v)} $</span>` : `<br>Prix ${fmt(now)}`;
+    return `<div class="prop" style="border-left:4px solid ${t.status === "open" ? (v >= 0 ? "var(--gain)" : "var(--loss)") : "var(--line)"}">${head}${pl}<br><span class="small">${esc(t.reason)}</span></div>`;
+  }).join("") || '<p class="small">Aucun trade de Claude en cours.</p>';
+  const ended = CLA.trades.filter(t => t.status === "closed" || t.status === "expired");
+  $("claHist").innerHTML = ended.map(t => t.status === "closed"
+    ? `${hm(t.closedAt)} · ${t.dir === 1 ? "achat" : "vente"} ${names[t.sym] || t.sym} ${fmt(t.fill)} → ${fmt(t.exit)} · ${esc(t.why)} · <b style="color:${t.pnl >= 0 ? "var(--gain)" : "var(--loss)"}">${t.pnl >= 0 ? "+" : ""}${fmt(t.pnl)} $</b>`
+    : `${t.dir === 1 ? "achat" : "vente"} ${names[t.sym] || t.sym} · non exécuté (${esc(t.why)})`).join("<br>") || "Aucun.";
+  $("claSum").textContent = `Solde ${fmt(CLA.balance)} $ (départ ${fmt(CLA.start)} $) · en cours ${open >= 0 ? "+" : ""}${fmt(open)} $ · mis à jour ${CLA.updated ? hm(CLA.updated) : "–"}`;
+}
+pullClaude(); setInterval(pullClaude, 60000); setInterval(renderClaude, 2000);
 pullServerAccount(); setInterval(pullServerAccount, 60000); setInterval(renderServer, 2000);
 pullServerProposals().then(handleHash);
 setInterval(pullServerProposals, 60000);

@@ -1,0 +1,48 @@
+name: Trades de Claude
+
+# Compte d'entraînement de Claude : rejoue les ordres de claude-orders.json sur les prix d'une minute
+# et enregistre le résultat dans claude-account.json (affiché par le site).
+on:
+  push:
+    paths: ["claude-orders.json"]
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: claude-trades
+  cancel-in-progress: false
+
+jobs:
+  suivi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rien à suivre ?
+        id: check
+        run: |
+          node -e '
+            const fs = require("fs");
+            const o = fs.existsSync("claude-orders.json") ? JSON.parse(fs.readFileSync("claude-orders.json")) : [];
+            const a = fs.existsSync("claude-account.json") ? JSON.parse(fs.readFileSync("claude-account.json")) : { trades: [] };
+            const done = new Set(a.trades.filter(t => t.status === "closed" || t.status === "expired").map(t => t.id));
+            console.log("todo=" + (o.some(x => !done.has(x.id)) ? 1 : 0));
+          ' >> "$GITHUB_OUTPUT"
+      - name: Suivi des trades
+        if: steps.check.outputs.todo == '1'
+        run: |
+          git config user.name "claude-trades"
+          git config user.email "claude-trades@users.noreply.github.com"
+          node scripts/claude-trades.mjs
+          git add claude-account.json
+          git diff --cached --quiet && exit 0
+          git commit -q -m "Trades de Claude : suivi"
+          for i in 1 2 3 4; do git pull -q --rebase -X theirs origin main && git push -q origin main && exit 0; sleep $((i*5)); done
+          exit 1

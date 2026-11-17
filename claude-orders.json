@@ -1,0 +1,8 @@
+[
+ {"id":"CLA-BTC-1","sym":"BTC","dir":-1,"type":"limit","entry":65150,"stop":65900,"target":62800,"placedAt":"2026-11-17T16:45:00Z","closeBy":"2026-11-17T20:30:00Z",
+  "reason":"Échauffement 1/3. Structure baissière en grande UT (-12 % sur 7 jours). Vente sur le haut du range 64 000-65 500, stop au-dessus de la liquidité des vendeurs, objectif vers 63 000 et la zone de liquidations 60-62 k. R:R ≈ 3,1."},
+ {"id":"CLA-XAU-2","sym":"XAU","dir":-1,"type":"limit","entry":3878,"stop":3901,"target":3812,"placedAt":"2026-11-17T16:45:00Z","closeBy":"2026-11-17T20:30:00Z",
+  "reason":"Échauffement 2/3. Or près de son plus bas sur un an, dollar fort, 96 % de chances de hausse Fed en décembre. Vente dans la zone 3 872-3 885 sous le plus haut du jour, stop au-dessus de 3 900. R:R ≈ 2,9. Prix suivi : PAXG."},
+ {"id":"CLA-NAS-3","sym":"NAS","dir":-1,"type":"limit","entry":27400,"stop":27640,"target":26950,"placedAt":"2026-11-17T16:45:00Z","closeBy":"2026-11-17T20:30:00Z",
+  "reason":"Échauffement 3/3. Nasdaq 100 à -6 % en deux séances, structure baissière. Vente sur retour vers 27 400, stop au-dessus de la résistance 27 620. Fermeture à 21h30 au plus tard (résultats Nvidia vers 22h20). R:R ≈ 1,9."}
+]
