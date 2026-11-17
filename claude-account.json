@@ -3,9 +3,53 @@
  "balance": 10000,
  "open": 0,
  "last": {
-  "BTC": 63831.8,
-  "XAU": 3859.16,
-  "NAS": 26808.0625
+  "BTC": 63721.61,
+  "XAU": 3856.4,
+  "NAS": 26738.5546875
+ },
+ "ctx": {
+  "BTC": {
+   "30min": [
+    63685.96,
+    64175.43
+   ],
+   "2h": [
+    63336,
+    65168.01
+   ],
+   "6h": [
+    63336,
+    65447
+   ]
+  },
+  "XAU": {
+   "30min": [
+    3854.72,
+    3862.71
+   ],
+   "2h": [
+    3847.22,
+    3881
+   ],
+   "6h": [
+    3830.01,
+    3881
+   ]
+  },
+  "NAS": {
+   "30min": [
+    26738.5546875,
+    26898.298828125
+   ],
+   "2h": [
+    26584.484375,
+    27241.986328125
+   ],
+   "6h": [
+    26584.484375,
+    27258.25
+   ]
+  }
  },
  "trades": [
   {
@@ -19,8 +63,9 @@
    "placedAt": "2026-11-17T16:45:00Z",
    "closeBy": "2026-11-17T20:30:00Z",
    "reason": "Échauffement 1/3. Structure baissière en grande UT (-12 % sur 7 jours). Vente sur le haut du range 64 000-65 500, stop au-dessus de la liquidité des vendeurs, objectif vers 63 000 et la zone de liquidations 60-62 k. R:R ≈ 3,1.",
+   "cancelAt": "2026-11-17T16:53:00Z",
    "status": "pending",
-   "last": 63831.8
+   "last": 63721.61
   },
   {
    "id": "CLA-XAU-2",
@@ -34,7 +79,7 @@
    "closeBy": "2026-11-17T20:30:00Z",
    "reason": "Échauffement 2/3. Or près de son plus bas sur un an, dollar fort, 96 % de chances de hausse Fed en décembre. Vente dans la zone 3 872-3 885 sous le plus haut du jour, stop au-dessus de 3 900. R:R ≈ 2,9. Prix suivi : PAXG.",
    "status": "pending",
-   "last": 3859.16
+   "last": 3856.4
   },
   {
    "id": "CLA-NAS-3",
@@ -47,9 +92,38 @@
    "placedAt": "2026-11-17T16:45:00Z",
    "closeBy": "2026-11-17T20:30:00Z",
    "reason": "Échauffement 3/3. Nasdaq 100 à -6 % en deux séances, structure baissière. Vente sur retour vers 27 400, stop au-dessus de la résistance 27 620. Fermeture à 21h30 au plus tard (résultats Nvidia vers 22h20). R:R ≈ 1,9.",
+   "cancelAt": "2026-11-17T16:53:00Z",
    "status": "pending",
-   "last": 26808.0625
+   "last": 26738.5546875
+  },
+  {
+   "id": "CLA-BTC-1b",
+   "sym": "BTC",
+   "dir": -1,
+   "type": "limit",
+   "entry": 64250,
+   "stop": 64900,
+   "target": 62300,
+   "placedAt": "2026-11-17T16:53:00Z",
+   "closeBy": "2026-11-17T20:30:00Z",
+   "reason": "Correction du trade 1 : BTC a cassé le bas du range 64 000 sans repasser par ma zone de vente. Nouvelle vente sur le retest de l'ancien support 64 000-64 250 (devenu résistance), stop au-dessus de 64 900, objectif 62 300 dans la zone de liquidations. R:R ≈ 3.",
+   "status": "pending",
+   "last": 63721.61
+  },
+  {
+   "id": "CLA-NAS-3b",
+   "sym": "NAS",
+   "dir": -1,
+   "type": "limit",
+   "entry": 27000,
+   "stop": 27180,
+   "target": 26620,
+   "placedAt": "2026-11-17T16:53:00Z",
+   "closeBy": "2026-11-17T20:30:00Z",
+   "reason": "Correction du trade 3 : le Nasdaq est tombé vers 26 800 sans revenir à 27 400. Nouvelle vente sur un retour vers 27 000 (cassure du support 27 150), stop au-dessus de 27 180, objectif 26 620 juste avant le support 26 600. R:R ≈ 2,1. Fermeture 21h30 au plus tard (Nvidia).",
+   "status": "pending",
+   "last": 26738.5546875
   }
  ],
- "updated": 1794934050198
+ "updated": 1794934270191
 }
