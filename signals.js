@@ -42,3 +42,13 @@ export function scoreMarket(b, step, TZ = 0) {
   return { score: out.reduce((a, x) => a + x.v, 0), details: out, atr: atrv, ph, pl, px };
 }
 
+
+// ADX (force de la tendance, 0-100) : au-dessus de 25, le marché tend ; en dessous, il oscille
+export function adx(b, n = 14) {
+  if (b.length < 3 * n) return null;
+  const tr = [], pd = [], md = [];
+  for (let i = 1; i < b.length; i++) { const u = b[i].high - b[i - 1].high, d = b[i - 1].low - b[i].low; pd.push(u > d && u > 0 ? u : 0); md.push(d > u && d > 0 ? d : 0); tr.push(Math.max(b[i].high - b[i].low, Math.abs(b[i].high - b[i - 1].close), Math.abs(b[i].low - b[i - 1].close))); }
+  const w = a => { let s = a.slice(0, n).reduce((x, y) => x + y, 0); const o = [s]; for (let i = n; i < a.length; i++) { s = s - s / n + a[i]; o.push(s); } return o; };
+  const T = w(tr), P = w(pd), M = w(md), dx = T.map((t, i) => { const p = 100 * P[i] / t, m = 100 * M[i] / t; return 100 * Math.abs(p - m) / (p + m || 1); });
+  let a = dx.slice(0, n).reduce((x, y) => x + y, 0) / n; for (let i = n; i < dx.length; i++) a = (a * (n - 1) + dx[i]) / n; return a;
+}

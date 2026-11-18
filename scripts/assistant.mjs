@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import Anthropic from "@anthropic-ai/sdk";
 import * as I from "../indicators.js";
-import { scoreMarket } from "../signals.js";
+import { scoreMarket, adx } from "../signals.js";
 import { loadAccount, saveAccount, track, manage, proposalActions, send } from "./suivi.mjs";
 
 const cfg = JSON.parse(readFileSync("assistant-config.json", "utf8"));
@@ -249,13 +249,21 @@ for (const sym of cfg.markets) {
     const cc = calendarCheck();
     if (cc.block) { log(sym, "signal ignoré :", cc.text); continue; }
     const dir = sc.score > 0 ? 1 : -1;
+    // filtres par marché, choisis d'après le backtest (scripts/backtest.mjs) : moins de signaux, mais de meilleurs
+    const F = (cfg.filters || {})[sym] || {};
+    if (F.minScore && Math.abs(sc.score) < F.minScore) { log(sym, `ignoré : score ${sc.score} sous ${F.minScore} pour ce marché`); continue; }
+    if (F.adx) { const a = adx(b.slice(-300)); if (a == null || a < F.adx) { log(sym, `ignoré : marché sans tendance nette (ADX ${a?.toFixed(0)} < ${F.adx})`); continue; } }
+    if (F.confirm1h && !(W.inWarm || !W.good)) {
+      const h = scoreMarket((await fetchCandles(m, "1h")).slice(0, -1), 3600, 0).score;
+      if (Math.sign(h) !== dir || Math.abs(h) < 4) { log(sym, `ignoré : la tendance 1 h ne confirme pas (score ${h})`); continue; }
+    }
     if (W.inWarm || !W.good) { // confirmation par la tendance d'une heure
       const h = scoreMarket((await fetchCandles(m, "1h")).slice(0, -1), 3600, 0).score;
       if (Math.sign(h) !== dir || Math.abs(h) < 4) { log(sym, `ignoré : la tendance 1 h ne confirme pas (score ${h})`); continue; }
     }
     let stop = dir === 1 ? Math.min(sc.px - 1.5 * sc.atr, sc.pl ?? Infinity) : Math.max(sc.px + 1.5 * sc.atr, sc.ph ?? -Infinity);
     if (!isFinite(stop) || Math.abs(sc.px - stop) > 4 * sc.atr) stop = sc.px - dir * 1.5 * sc.atr;
-    let p = { id: `${sym}-${Date.now()}`, sym, tf: cfg.timeframe, dir, entry: sc.px, stop, target: sc.px + dir * 2 * Math.abs(sc.px - stop), score: sc.score,
+    let p = { id: `${sym}-${Date.now()}`, sym, tf: cfg.timeframe, dir, entry: sc.px, stop, target: sc.px + dir * (cfg.targetR || 2) * Math.abs(sc.px - stop), score: sc.score,
       details: sc.details.map(x => ({ name: x.name, v: x.v })), news: cc.text, reason: `${sc.details.filter(x => Math.sign(x.v) === Math.sign(sc.score)).length} méthodes sur ${sc.details.length} vont dans le même sens : ${sc.details.filter(x => Math.sign(x.v) === Math.sign(sc.score)).map(x => x.name).join(", ")}.`, confidence: null, t: Date.now(), source: "github" };
     if (client) {
       const n = (cfg.checkNews ? await news(m.name) : "") + " " + cc.text;

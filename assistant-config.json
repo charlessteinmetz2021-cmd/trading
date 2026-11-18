@@ -55,5 +55,15 @@
     "to": "03:00",
     "max": 3,
     "maxLossPct": 2
-  }
+  },
+  "filters": {
+    "BTC": {
+      "adx": 25
+    },
+    "EUR": {
+      "minScore": 10,
+      "confirm1h": true
+    }
+  },
+  "targetR": 3
 }
