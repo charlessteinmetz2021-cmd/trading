@@ -16,8 +16,8 @@
   },
   "cooldownMin": 90,
   "goalPips": {
-    "min": 150,
-    "max": 150,
+    "min": 200,
+    "max": 200,
     "stopLoss": 100000
   },
   "pip": {

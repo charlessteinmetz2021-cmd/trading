@@ -133,7 +133,7 @@ const PIP = { BTC: 1, XAU: 0.1, NAS: 1, EUR: 0.0001, ...(cfg.pip || {}) };
 const pipsOf = (p, to) => ((to - p.entry) * p.dir) / PIP[p.sym];
 const parisNow = () => { const s = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }); return { day: s.slice(0, 10), hm: s.slice(11, 16), wd: new Date(s.replace(" ", "T")).getDay() }; };
 const parisDay = t => new Date(t).toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
-// Séance de nuit (00 h-3 h) : ses trades ne comptent pas dans l'objectif de 150 pips
+// Séance de nuit (00 h-3 h) : ses trades ne comptent pas dans l'objectif de pips du jour
 const isNight = x => /-N\d/.test(String(x.prop || x.id));
 // Objectif du jour en pips (gagnés sur les trades fermés aujourd'hui) + prudence autour de l'ouverture américaine
 // « connectée » = le site est ouvert et relié (il envoie un signal toutes les 2 minutes)
@@ -279,7 +279,7 @@ for (const sym of cfg.markets) {
     if (Math.abs(p.target - p.entry) / PIP[sym] < 1.5 * slPips) { log(sym, `ignoré : ${Math.round(Math.min(tpPips, left))} pips à gagner pour ${Math.round(slPips)} pips de risque, pas assez`); continue; }
     p.lot = lotAdvice(p, W);
     p.reason = `${W.inWarm ? `Trade ${W.n + 1}/${W.trades} de démarrage (sélection renforcée). ` : ""}${p.reason}\n${p.lot}`;
-    if (night) { p.id = `${sym}-N${Date.now()}`; p.reason = `🌙 Séance de nuit (hors objectif de 150 pips). ${p.reason}`; state.nightCount = (state.nightDay === state.day ? state.nightCount || 0 : 0) + 1; state.nightDay = state.day; }
+    if (night) { p.id = `${sym}-N${Date.now()}`; p.reason = `🌙 Séance de nuit (hors objectif de ${(cfg.goalPips || {}).max || 150} pips). ${p.reason}`; state.nightCount = (state.nightDay === state.day ? state.nightCount || 0 : 0) + 1; state.nightDay = state.day; }
     proposals.unshift(p); if (!night) state.count++;
     await notify(p);
     log(sym, "proposition envoyée", JSON.stringify(p));
