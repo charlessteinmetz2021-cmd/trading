@@ -157,6 +157,16 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 .sclose{font:inherit;font-weight:700;padding:9px 14px;border:0;border-radius:8px;background:var(--loss);color:#fff;cursor:pointer}
 .sclose:disabled{opacity:.6;cursor:default}
 @media (max-width:560px){.scard{grid-template-columns:1fr auto}.sclose{grid-column:1/-1}}
+.hist{margin-bottom:16px}
+.hsum{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.85rem;color:var(--muted);margin:4px 0 8px}
+.hsum b{color:var(--fg);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hwrap{overflow-x:auto}
+.htab{width:100%;border-collapse:collapse;font-size:.84rem;font-variant-numeric:tabular-nums}
+.htab th{text-align:left;font-weight:600;color:var(--muted);font-size:.75rem;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.htab td{padding:6px 8px;border-bottom:1px dashed var(--line);white-space:nowrap;text-align:left;font-family:var(--body)}
+.htab th.num{text-align:right}
+.htab tr.day td{font-weight:700;font-family:var(--body);color:var(--fg);background:color-mix(in srgb,var(--line) 35%,transparent);border-bottom:0}
+.htab td.num,.htab tr.day td.num{font-family:var(--mono);text-align:right}
 </style>
 </head><body>
 <div class="wrap">
@@ -260,6 +270,18 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
       <div class="row"><span>Marge utilisée</span><span id="aMargin">–</span></div>
     </section>
   </div>
+
+  <section class="hist" aria-labelledby="tHist">
+    <div class="bar" style="justify-content:space-between">
+      <h2 id="tHist">Historique des trades</h2>
+      <div class="seg" role="group" aria-label="Filtrer l'historique" id="hFilter">
+        <button data-hf="all" aria-pressed="true">Tous</button><button data-hf="pc" aria-pressed="false">PC</button><button data-hf="srv" aria-pressed="false">Serveur</button>
+      </div>
+    </div>
+    <div class="hsum" id="hSum"></div>
+    <div class="hwrap"><table class="htab"><thead><tr><th>Fermé le</th><th>Compte</th><th>Marché</th><th>Sens</th><th class="num">Entrée</th><th class="num">Sortie</th><th>Raison</th><th class="num">Pips</th><th class="num">Résultat</th></tr></thead><tbody id="hBody"></tbody></table></div>
+    <button class="link" id="hMore" hidden>Voir plus</button>
+  </section>
 
   <section class="assist" aria-labelledby="tAssist">
     <div class="bar" style="justify-content:space-between">
@@ -377,5 +399,5 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script type="module" src="app.js?v=20261118c"></script>
+<script type="module" src="app.js?v=20261118d"></script>
 </body></html>

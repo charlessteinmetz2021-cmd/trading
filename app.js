@@ -1358,6 +1358,34 @@ function renderDash() {
 }
 setInterval(renderDash, 1000);
 
+// ---------- historique des trades (simulateur du PC + serveur) ----------
+let hFilter = "all", hLimit = 30, hKey = "";
+function renderHistory() {
+  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" }, pv = { BTC: 10, XAU: 0.1, NAS: 1 };
+  const pc = S.history.map(h => ({ src: "PC", t: h.t, sym: h.sym, dir: h.dir, entry: h.entry, exit: h.exit, why: h.reason, pnl: h.pnl }));
+  const srv = (SRV?.history || []).filter(h => !String(h.id).startsWith("test")).map(h => ({ src: /-N\d/.test(String(h.prop || h.id)) ? "Serveur 🌙" : h.isAdd ? "Serveur (renfort)" : "Serveur", t: h.closedAt, sym: h.sym, dir: h.dir, entry: h.entry, exit: h.exit, why: h.why, pnl: h.pnl }));
+  const rows = [...(hFilter !== "srv" ? pc : []), ...(hFilter !== "pc" ? srv : [])].sort((a, b) => b.t - a.t);
+  const key = hFilter + hLimit + rows.length + (rows[0]?.t || 0); if (key === hKey) return; hKey = key;
+  const wins = rows.filter(r => r.pnl > 0), tot = rows.reduce((s, r) => s + r.pnl, 0), pips = rows.reduce((s, r) => s + (r.exit - r.entry) * r.dir / (pv[r.sym] || 1), 0);
+  $("hSum").innerHTML = rows.length ? `<span>Trades <b>${rows.length}</b></span><span>Gagnants <b>${Math.round(wins.length / rows.length * 100)} %</b></span><span>Résultat <b class="${signCls(tot)}">${sgn(tot)}${usd(tot)}</b></span><span>Pips <b class="${signCls(pips)}">${pips >= 0 ? "+" : ""}${Math.round(pips)}</b></span>` : "";
+  let lastDay = "", html = "";
+  for (const r of rows.slice(0, hLimit)) {
+    const day = new Date(r.t).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    if (day !== lastDay) {
+      lastDay = day; const dr = rows.filter(x => new Date(x.t).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) === day);
+      const dt = dr.reduce((s, x) => s + x.pnl, 0), dp = dr.reduce((s, x) => s + (x.exit - x.entry) * x.dir / (pv[x.sym] || 1), 0);
+      html += `<tr class="day"><td colspan="7">${day}</td><td class="num ${signCls(dp)}">${dp >= 0 ? "+" : ""}${Math.round(dp)}</td><td class="num ${signCls(dt)}">${sgn(dt)}${usd(dt)}</td></tr>`;
+    }
+    const d = MARKETS[r.sym]?.dec ?? 2, p = (r.exit - r.entry) * r.dir / (pv[r.sym] || 1);
+    html += `<tr><td>${new Date(r.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</td><td>${r.src}</td><td>${names[r.sym] || r.sym}</td><td class="${r.dir === 1 ? "gain" : "loss"}">${r.dir === 1 ? "Achat" : "Vente"}</td><td class="num">${fmt(r.entry, d)}</td><td class="num">${fmt(r.exit, d)}</td><td>${r.why || "–"}</td><td class="num ${signCls(p)}">${p >= 0 ? "+" : ""}${Math.round(p)}</td><td class="num ${signCls(r.pnl)}"><b>${sgn(r.pnl)}${usd(r.pnl)}</b></td></tr>`;
+  }
+  $("hBody").innerHTML = html || '<tr><td colspan="9" class="empty">Aucun trade fermé pour l\'instant. Ils s\'afficheront ici, du plus récent au plus ancien.</td></tr>';
+  $("hMore").hidden = rows.length <= hLimit;
+}
+$("hFilter").addEventListener("click", e => { const b = e.target.closest("[data-hf]"); if (!b) return; hFilter = b.dataset.hf; hLimit = 30; $("hFilter").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderHistory(); });
+$("hMore").onclick = () => { hLimit += 30; renderHistory(); };
+setInterval(renderHistory, 2000);
+
 // signal de présence pour la séance de nuit : le serveur sait que le site est ouvert (sujet séparé, sans notification)
 // ntfy.sh limite à 250 messages par jour et par connexion : le signal ne part que pendant la séance de nuit, toutes les 10 minutes
 function presence() {
@@ -1373,7 +1401,7 @@ function setupTopic() {
   inp.value = topic(); show(); connectLive();
   $("ntfySave").onclick = () => { try { const v = inp.value.trim().replace(/^https?:\/\/ntfy\.sh\//, ""); v ? localStorage.setItem(TOPIC_KEY, v) : localStorage.removeItem(TOPIC_KEY); } catch (e) {} show(); renderServer(); connectLive(); };
 }
-setupTopic(); pipNote();
+setupTopic(); pipNote(); renderHistory();
 // ---------- compte d'entraînement de Claude (ordres passés par Claude, suivis par GitHub Actions) ----------
 let CLA = null;
 async function pullClaude() {
