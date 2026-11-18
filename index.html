@@ -125,18 +125,58 @@ td.empty{color:var(--muted);text-align:left;font-family:var(--body);white-space:
 details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted)}
 .legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
+.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 6px;background:none;border:0;padding:0;box-shadow:none}
+.dcell{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:3px;align-content:start}
+.dcell small{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dcell b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.05rem;display:flex;align-items:center;gap:6px}
+.dcell.wide{grid-column:span 2}
+@media (max-width:620px){.dash{grid-template-columns:1fr 1fr;gap:8px}.dcell{padding:8px 10px}.dcell b{font-size:.95rem}.dcell.wide,.dcell:last-child{grid-column:span 2}}
+.meter{position:relative;height:8px;border-radius:4px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--gain);border-radius:4px;transition:width .4s}
+.meter i.play{background:color-mix(in srgb,var(--gain) 35%,transparent);z-index:0}
+.meter i:not(.play){z-index:1}
+.meter.loss i{background:var(--loss)}
+.ldot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
+.ldot.on{background:var(--gain);box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 60%,transparent);animation:lpulse 1.6s infinite}
+.ldot.warn{background:var(--warn)}
+@keyframes lpulse{70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.ldot.on{animation:none}}
+.dgate{margin:0 0 12px;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--fg)}
+.subh{margin:12px 0 6px;font-size:.95rem}
+.old summary{margin-top:8px}
+.oldlist{display:grid;gap:2px;margin-top:6px;font-size:.82rem}
+.oldlist div{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
+.prop.pending{animation:pnew .9s ease 2}
+@keyframes pnew{50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--warn) 45%,transparent)}}
+.exp{font-family:var(--mono);font-size:.8rem;color:var(--warn)}
+.livetoast{position:fixed;right:16px;bottom:16px;z-index:50;max-width:min(420px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--entry);border-radius:10px;padding:10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:grid;gap:4px;font-size:.9rem}
+.livetoast b{font-size:.95rem}
+.scard{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center}
+.sres{display:grid;justify-items:end;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sres b{font-size:1.1rem}
+.sclose{font:inherit;font-weight:700;padding:9px 14px;border:0;border-radius:8px;background:var(--loss);color:#fff;cursor:pointer}
+.sclose:disabled{opacity:.6;cursor:default}
+@media (max-width:560px){.scard{grid-template-columns:1fr auto}.sclose{grid-column:1/-1}}
 </style>
 </head><body>
 <div class="wrap">
   <header>
     <div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><h1>Atelier de trading</h1><span class="badge">Simulation, argent fictif</span><a class="link" href="#formation">Formation, méthode et outils ↓</a></div>
     <div class="account">
-      <div><small>Solde</small><b id="aBal">–</b></div>
+      <div><small>Solde du simulateur</small><b id="aBal">–</b></div>
       <div><small>Valeur du compte</small><b id="aEq">–</b></div>
       <div><small>P&amp;L latent</small><b id="aPnl">–</b></div>
       <div><small>Marge libre</small><b id="aFree">–</b></div>
     </div>
   </header>
+  <section class="dash" id="dash" aria-label="Ta journée">
+    <div class="dcell"><small>État</small><b id="dLive"><span class="ldot"></span>Connexion…</b><span class="small" id="dLiveSub"></span></div>
+    <div class="dcell"><small>Séance</small><b id="dSess">–</b><span class="small" id="dSessSub"></span></div>
+    <div class="dcell wide"><small>Objectif du jour</small><b id="dGoal">–</b><div class="meter"><i id="dGoalBar"></i><i id="dGoalPlay" class="play"></i></div><span class="small" id="dGoalSub"></span></div>
+    <div class="dcell wide"><small>Perte du jour (max 2 %)</small><b id="dLoss">–</b><div class="meter loss"><i id="dLossBar"></i></div><span class="small" id="dLossSub"></span></div>
+    <div class="dcell"><small>Compte du serveur</small><b id="dAcc">–</b><span class="small" id="dAccSub"></span></div>
+  </section>
+  <p class="small dgate" id="dGate" hidden></p>
 
   <div class="main">
     <section aria-labelledby="tChart">
@@ -216,9 +256,37 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 
   <section class="assist" aria-labelledby="tAssist">
     <div class="bar" style="justify-content:space-between">
-      <h2 id="tAssist">Assistant automatique</h2>
-      <label class="switch"><input type="checkbox" id="asOn"><span>Activer l'assistant</span></label>
+      <h2 id="tAssist">Assistant 24 h/24</h2>
+      <span class="small" id="asLive"></span>
     </div>
+    <p class="small" style="max-width:90ch">Le serveur analyse le marché en continu, même PC et téléphone éteints. Il t'envoie ses propositions sur ton téléphone (application ntfy) et ici. Accepter, refuser ou clôturer se fait d'un clic, ici ou sur le téléphone : c'est le même compte.</p>
+    <h3 class="subh">Propositions en attente</h3>
+    <div id="asList" class="props"></div>
+    <details class="old"><summary>Propositions précédentes</summary><div id="asOld" class="oldlist"></div></details>
+    <div id="srv" class="srv" hidden>
+      <h3 style="margin:10px 0 6px;font-size:15px">Trades suivis par le serveur (téléphone)</h3>
+      <p class="small" id="srvSum"></p>
+      <div id="srvPos" class="props"></div>
+      <details style="margin-top:6px"><summary class="small">Trades fermés</summary><div id="srvHist" class="small"></div></details>
+    </div>
+    <div id="cla" class="srv" hidden>
+      <h3 style="margin:10px 0 6px;font-size:15px">🤖 Trades de Claude (entraînement, ouverts par Claude lui-même)</h3>
+      <p class="small" id="claSum"></p>
+      <div id="claPos" class="props"></div>
+      <details style="margin-top:6px" open><summary class="small">Terminés</summary><div id="claHist" class="small"></div></details>
+    </div>
+    <details class="server">
+      <summary><b>Relier ce PC à ton téléphone</b> <span class="small" id="linkState"></span></summary>
+      <div style="display:grid;gap:6px;margin-top:8px;max-width:75ch" class="small">
+        <p><b>Relier ce PC à ton téléphone :</b> colle ici le nom de ton sujet ntfy (le même que dans l'application ntfy, et que le secret NTFY_TOPIC). Il reste uniquement dans ce navigateur. Ensuite, accepter, refuser ou fermer un trade ici fait exactement la même chose que sur le téléphone : un seul compte.</p>
+        <div class="bar"><input id="ntfyTopic" type="password" autocomplete="off" placeholder="nom du sujet ntfy" style="max-width:260px"><button class="chip" id="ntfySave">Relier</button></div>
+        <p id="ntfyState"></p>
+        <p>Les réglages du serveur (marché, heures, objectif, limites) sont dans le fichier <code>assistant-config.json</code> du dépôt. Demande-moi pour les changer.</p>
+      </div>
+    </details>
+    <details class="server">
+      <summary><b>Assistant dans le navigateur (optionnel)</b></summary>
+      <div class="bar" style="justify-content:flex-end;margin-top:8px"><label class="switch"><input type="checkbox" id="asOn"><span>Activer l'assistant du navigateur</span></label></div>
     <p class="small">L'assistant analyse les marchés choisis toutes les minutes avec toutes les méthodes du site : tendance, moyennes mobiles, Ichimoku, MACD, RSI, stochastique, Bollinger, Supertrend, SAR, VWAP, structure et imbalances. Quand plusieurs méthodes concordent, Claude vérifie les annonces du marché et le graphique, puis t'envoie une notification. Tu acceptes ou tu refuses : rien n'est pris sans toi. Les trades acceptés sont simulés, avec 1 % de risque.</p>
     <div class="asgrid">
       <div class="fields" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
@@ -235,29 +303,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
       <p class="small" id="asCount"></p>
       <p class="small" id="asLog" role="status"></p>
     </div>
-    <details class="server">
-      <summary><b>Assistant 24 h/24 (même PC et téléphone éteints)</b></summary>
-      <div style="display:grid;gap:6px;margin-top:8px;max-width:75ch" class="small">
-        <p>Une copie de l'assistant tourne sur les serveurs de GitHub toutes les 5 minutes. Elle t'envoie ses propositions sur ton téléphone avec l'application gratuite <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Touche « Accepter » dans la notification : le serveur ouvre le trade sur un compte fictif de 10 000 $ (1 % de risque), sans ouvrir le site. Il surveille Bitcoin, l'or et le Nasdaq. Tu peux accepter plusieurs propositions, ou la même plusieurs fois. Dès qu'un trade gagne autant que le risque pris, il remonte le stop loss au point d'entrée ; plus tard il le fait suivre le prix pour garder une partie du gain, et il ajoute un petit trade de renfort si les méthodes confirment encore. Il te prévient de chaque changement, quand le stop loss ou le take profit est touché, et t'envoie le gain ou la perte toutes les 30 minutes. Le serveur réagit à tes boutons en moins d'une minute. Ses propositions apparaissent aussi dans la liste ci-dessous.</p>
-        <p><b>Relier ce PC à ton téléphone :</b> colle ici le nom de ton sujet ntfy (le même que dans l'application ntfy, et que le secret NTFY_TOPIC). Il reste uniquement dans ce navigateur. Ensuite, accepter, refuser ou fermer un trade ici fait exactement la même chose que sur le téléphone : un seul compte.</p>
-        <div class="bar"><input id="ntfyTopic" type="password" autocomplete="off" placeholder="nom du sujet ntfy" style="max-width:260px"><button class="chip" id="ntfySave">Relier</button></div>
-        <p id="ntfyState"></p>
-        <p>Les réglages (marchés, unité de temps, exigence) sont dans le fichier <code>assistant-config.json</code> du dépôt.</p>
-      </div>
     </details>
-    <div id="cla" class="srv" hidden>
-      <h3 style="margin:10px 0 6px;font-size:15px">🤖 Trades de Claude (entraînement, ouverts par Claude lui-même)</h3>
-      <p class="small" id="claSum"></p>
-      <div id="claPos" class="props"></div>
-      <details style="margin-top:6px" open><summary class="small">Terminés</summary><div id="claHist" class="small"></div></details>
-    </div>
-    <div id="srv" class="srv" hidden>
-      <h3 style="margin:10px 0 6px;font-size:15px">Trades suivis par le serveur (téléphone)</h3>
-      <p class="small" id="srvSum"></p>
-      <div id="srvPos" class="props"></div>
-      <details style="margin-top:6px"><summary class="small">Trades fermés</summary><div id="srvHist" class="small"></div></details>
-    </div>
-    <div id="asList" class="props"></div>
   </section>
 
   <section class="claude" aria-labelledby="tClaude">
@@ -324,5 +370,5 @@ details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script type="module" src="app.js?v=20261116a"></script>
+<script type="module" src="app.js?v=20261118a"></script>
 </body></html>

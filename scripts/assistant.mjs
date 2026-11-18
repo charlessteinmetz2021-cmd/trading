@@ -139,7 +139,7 @@ const isNight = x => /-N\d/.test(String(x.prop || x.id));
 // « connectée » = le site est ouvert et relié (il envoie un signal toutes les 2 minutes)
 async function connected() {
   try {
-    const r = await fetch(`https://ntfy.sh/${process.env.NTFY_TOPIC}-presence/json?poll=1&since=6m`);
+    const r = await fetch(`https://ntfy.sh/${process.env.NTFY_TOPIC}-presence/json?poll=1&since=15m`);
     return r.ok && (await r.text()).includes('"event":"message"');
   } catch (e) { return false; }
 }
@@ -212,11 +212,23 @@ function lotAdvice(p, W) {
 }
 // stop au point d'entrée plus tôt pendant le démarrage
 const markBe = () => { const W = warmup(); for (const p of acc.positions) if (p.beAt == null) p.beAt = W.inWarm ? W.breakeven : (cfg.manage?.breakeven ?? 1); };
+// Tableau de bord lu par le site : séance, objectif de pips, perte du jour, raison d'attente
+function dashboard(gate) {
+  const now = parisNow(), g = { min: 150, max: 150, ...(cfg.goalPips || {}) }, w = cfg.window || {}, n = cfg.night || {}, us = cfg.usOpen || {};
+  const dayH = acc.history.filter(h => parisDay(h.closedAt) === now.day && !isNight(h)), nightH = acc.history.filter(h => isNight(h) && parisDay(h.openedAt) === now.day);
+  const dayPnl = dayH.reduce((s, h) => s + h.pnl, 0), nightPnl = nightH.reduce((s, h) => s + h.pnl, 0);
+  const wd = now.wd >= 1 && now.wd <= 5;
+  const session = n.from && now.hm >= n.from && now.hm < n.to ? "nuit" : wd && us.from && now.hm >= us.from && now.hm < us.to ? "ouverture US" : w.from && now.hm >= w.from && now.hm < w.to ? "jour" : "hors heures";
+  return { t: Date.now(), day: now.day, session, window: w, night: n, usOpen: us, goal: g.max, pipsDone: state.pips?.done ?? 0, pipsInPlay: state.pips?.inPlay ?? 0,
+    dayPnl, maxDayLoss: (cfg.maxDayLossPct ?? 2) / 100 * (acc.balance - dayPnl), nightPnl, maxNightLoss: (n.maxLossPct ?? 2) / 100 * (acc.balance - nightPnl),
+    gate: gate && !gate.night ? String(gate) : null, proposalsToday: state.count, maxPerDay: cfg.maxPerDay, warm: warmup(), markets: cfg.markets };
+}
 async function scan() {
 const today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" }); // journée à l'heure de Paris
 if (state.day !== today) { state.day = today; state.count = 0; state.nightCount = 0; }
 try { await usOpenGuard(); } catch (e) { log("ouverture US : erreur", e?.message || e); }
 let gate = await dayGate();
+try { acc.dash = dashboard(gate); saveAccount(acc); } catch (e) { log("tableau de bord : erreur", e?.message || e); }
 const night = gate?.night; if (night) gate = null;
 if (gate) log("pas de nouvelle proposition :", gate); else if (night) log("séance de nuit");
 const W = warmup(), minScore = W.inWarm || !W.good ? Math.max(cfg.minScore, W.minScore) : cfg.minScore;
@@ -284,7 +296,7 @@ save();
 // et enregistre l'état dans le dépôt pour le site.
 const LOOP = +(process.env.LOOP_MINUTES || 0), end = Date.now() + LOOP * 60000;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const shape = () => JSON.stringify([acc.positions.map(p => [p.id, p.stop, p.target]), acc.history.length]);
+const shape = () => JSON.stringify([acc.positions.map(p => [p.id, p.stop, p.target]), acc.history.length, proposals.slice(0, 5).map(p => [p.id, p.status]), acc.dash?.gate, acc.dash?.session]);
 let lastScan = 0, lastCommit = 0, lastShape = "";
 function commit(force) {
   if (!LOOP) return;
