@@ -15,4 +15,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/prix.mjs "${{ inputs.symbole }}"
+      - run: node scripts/prix.mjs "$SYM"
+        env:
+          SYM: ${{ inputs.symbole }}
