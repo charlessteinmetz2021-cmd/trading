@@ -35,6 +35,12 @@ try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 if (!S || !Array.isArray(S.positions)) S = fresh(10000);
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 price.NAS = S.nasPrice;
+// au rechargement : on garde le marché, l'unité de temps et la vue ; avec un trade ouvert, on montre « mes trades »
+const VKEY = "atelier-vue-v1";
+try { const v = JSON.parse(localStorage.getItem(VKEY)) || {}; if (["BTC", "XAU", "NAS"].includes(v.cur)) cur = v.cur; if (TF.some(t => t[0] === v.tf)) tf = v.tf; if (typeof v.tvMode === "boolean") tvMode = v.tvMode; } catch (e) {}
+{ const open = S.positions.find(p => p.sym === cur) || S.orders.find(o => o.sym === cur) || S.positions[0] || S.orders[0];
+  if (open) { cur = open.sym; if (cur !== "NAS") tvMode = false; } }
+setInterval(() => { try { localStorage.setItem(VKEY, JSON.stringify({ cur, tf, tvMode })); } catch (e) {} }, 1500);
 
 const DKEY = "atelier-dessins-v1";
 let D = {};
