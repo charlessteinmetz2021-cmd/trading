@@ -58,6 +58,12 @@ function makeChart() {
   candles = chart.addSeries(LC.CandlestickSeries, {
     upColor: "#1f9d5a", downColor: "#d0453a", borderVisible: false, wickUpColor: "#1f9d5a", wickDownColor: "#d0453a",
   });
+  candles.priceScale().applyOptions({ scaleMargins: { top: 0.18, bottom: 0.08 } });
+  // l'échelle inclut l'entrée, le SL et le TP des trades ouverts : on voit toujours où ils sont
+  candles.applyOptions({ autoscaleInfoProvider: orig => { const r = orig(); if (!r || !r.priceRange) return r;
+    const lv = [...S.positions.filter(p => p.sym === cur).flatMap(p => [p.entry, p.sl, p.tp]), ...S.orders.filter(o => o.sym === cur).map(o => o.limit), ...(SRV?.positions || []).filter(p => p.sym === cur).flatMap(p => [p.entry, p.stop, p.target])].filter(x => x > 0);
+    if (!lv.length) return r; const pr = r.priceRange;
+    return { ...r, priceRange: { minValue: Math.min(pr.minValue, ...lv), maxValue: Math.max(pr.maxValue, ...lv) } }; } }); // de la place en haut pour l'encart, les bougies restent visibles
   setupClicks();
   setupDrag();
   candles.attachPrimitive(overlay);
@@ -365,10 +371,10 @@ const zones = {
           const ye = candles.priceToCoordinate(p.entry); if (ye == null) continue;
           const v = pnl(p, price[cur]);
           const rect = (y2, color) => { if (y2 == null) return; ctx.fillStyle = color; ctx.fillRect(x0 * hr, Math.min(ye, y2) * vr, W - x0 * hr, Math.abs(y2 - ye) * vr); };
-          if (p.tp) rect(candles.priceToCoordinate(p.tp), "rgba(31,157,90,0.16)");
-          if (p.sl) rect(candles.priceToCoordinate(p.sl), "rgba(208,69,58,0.16)");
+          if (p.tp) rect(candles.priceToCoordinate(p.tp), "rgba(31,157,90,0.07)");
+          if (p.sl) rect(candles.priceToCoordinate(p.sl), "rgba(208,69,58,0.07)");
           const yc = candles.priceToCoordinate(price[cur] ?? p.entry);
-          rect(yc, v >= 0 ? "rgba(31,157,90,0.28)" : "rgba(208,69,58,0.28)");
+          rect(yc, v >= 0 ? "rgba(31,157,90,0.12)" : "rgba(208,69,58,0.12)");
         }
       });
     } }) }];
@@ -376,8 +382,9 @@ const zones = {
 };
 
 // ---------- dessins ----------
-function addLine(priceVal, color, title, style = 0, width = 1) {
-  return candles.createPriceLine({ price: priceVal, color, lineWidth: width, lineStyle: style, axisLabelVisible: true, title });
+function addLine(priceVal, color, title, style = 0, width = 1, quiet = false) {
+  // quiet : trait fin, sans étiquette sur le graphique (le prix reste sur l'axe) pour ne pas cacher les bougies
+  return candles.createPriceLine({ price: priceVal, color: quiet && /^#[0-9a-f]{6}$/i.test(color) ? color + "b3" : color, lineWidth: quiet ? 1 : width, lineStyle: style, axisLabelVisible: true, title: quiet ? "" : title });
 }
 function clearDrawn() {
   drawnLines.forEach(l => candles.removePriceLine(l)); drawnLines = [];
@@ -448,19 +455,19 @@ function renderPosLines() {
   const px = price[cur];
   for (const p of S.positions.filter(p => p.sym === cur)) {
     const v = pnl(p, px);
-    posLines.push({ kind: "entry", id: p.id, line: addLine(p.entry, css("--entry"), `${p.dir === 1 ? "Achat" : "Vente"} ${p.qty} · ${sgn(v)}${usd(v)}`, 0, 2) });
-    if (p.sl) posLines.push({ kind: "sl", id: p.id, line: addLine(p.sl, css("--loss"), `SL ${usd(pnl(p, p.sl))}`, 2, 2) });
-    if (p.tp) posLines.push({ kind: "tp", id: p.id, line: addLine(p.tp, css("--gain"), `TP +${usd(pnl(p, p.tp))}`, 2, 2) });
+    posLines.push({ kind: "entry", id: p.id, line: addLine(p.entry, css("--entry"), "", 2, 1, true) });
+    if (p.sl) posLines.push({ kind: "sl", id: p.id, line: addLine(p.sl, css("--loss"), "", 2, 1, true) });
+    if (p.tp) posLines.push({ kind: "tp", id: p.id, line: addLine(p.tp, css("--gain"), "", 2, 1, true) });
   }
   // trades du serveur (téléphone / PC relié) : traits en pointillés
   for (const p of (SRV?.positions || []).filter(p => p.sym === cur)) {
     const v = (px - p.entry) * p.dir * p.qty;
-    posLines.push({ kind: "srv", id: p.id, line: addLine(p.entry, css("--claude"), `Serveur ${p.dir === 1 ? "achat" : "vente"}${p.isAdd ? " (renfort)" : ""} · ${sgn(v)}${usd(v)}`, 1, 2) });
-    posLines.push({ kind: "srvsl", id: p.id, line: addLine(p.stop, css("--loss"), `SL serveur${p.locked != null ? " 🔒" : ""}`, 3, 1) });
-    posLines.push({ kind: "srvtp", id: p.id, line: addLine(p.target, css("--gain"), "TP serveur", 3, 1) });
+    posLines.push({ kind: "srv", id: p.id, line: addLine(p.entry, css("--claude"), "", 1, 1, true) });
+    posLines.push({ kind: "srvsl", id: p.id, line: addLine(p.stop, css("--loss"), "", 3, 1, true) });
+    posLines.push({ kind: "srvtp", id: p.id, line: addLine(p.target, css("--gain"), "", 3, 1, true) });
   }
   for (const o of S.orders.filter(o => o.sym === cur)) {
-    posLines.push({ kind: "order", id: o.id, line: addLine(o.limit, css("--muted"), `Limite ${o.dir === 1 ? "achat" : "vente"} ${o.qty}`, 1, 1) });
+    posLines.push({ kind: "order", id: o.id, line: addLine(o.limit, css("--entry"), `${o.dir === 1 ? "Achat" : "Vente"} en attente`, 1, 1, false) });
   }
 }
 function updatePosTitles() {
@@ -469,12 +476,12 @@ function updatePosTitles() {
   for (const l of posLines) if (l.kind === "entry") {
     const p = S.positions.find(x => x.id === l.id); if (!p) continue;
     const v = pnl(p, px);
-    l.line.applyOptions({ title: `${p.dir === 1 ? "Achat" : "Vente"} ${p.qty} · ${sgn(v)}${usd(v)}` });
+    void v; // le gain s'affiche dans l'encart en haut à gauche, pas sur le trait
   }
   for (const l of posLines) if (l.kind === "srv" && px != null) {
     const p = SRV?.positions.find(x => x.id === l.id); if (!p) continue;
     const v = (px - p.entry) * p.dir * p.qty;
-    l.line.applyOptions({ title: `Serveur ${p.dir === 1 ? "achat" : "vente"}${p.isAdd ? " (renfort)" : ""} · ${sgn(v)}${usd(v)}` });
+    void v;
   }
 }
 // glisser les SL / TP à la souris ou au doigt
@@ -553,7 +560,7 @@ function renderSymbols() {
     if (b.dataset.k === cur) return;
     cur = b.dataset.k;
     // le ticket repart à zéro : les SL / TP / prix limite d'un marché n'ont pas de sens sur un autre
-    ["sl", "tp", "limitPx"].forEach(i => $(i).value = "");
+    ["sl", "tp", "limitPx", "slPips", "tpPips", "entPips"].forEach(i => $(i).value = ""); pipNote();
     $("qty").value = { BTC: "0.01", XAU: "1", NAS: "1" }[cur];
     ["cEntry", "cStop", "cTp"].forEach(i => $(i).value = ""); calc();
     setType("market"); say(""); $("answer").hidden = true; lastIdea = null;
@@ -637,7 +644,8 @@ function check(k) {
   const px = price[k]; if (px == null) return;
   let changed = false;
   for (const o of S.orders.filter(o => o.sym === k)) {
-    if ((o.dir === 1 && px <= o.limit) || (o.dir === -1 && px >= o.limit)) {
+    const above = o.above ?? (o.dir === -1); // anciens ordres : achat sous le prix, vente au-dessus
+    if (above ? px >= o.limit : px <= o.limit) {
       S.orders = S.orders.filter(x => x !== o); openPos(k, o.dir, o.qty, o.limit, o.lev, o.sl, o.tp, true); changed = true;
     }
   }
@@ -660,26 +668,46 @@ function closePos(p, px, reason, quiet) {
 const say = t => { $("msg").textContent = t; };
 function place(dir) {
   const m = MARKETS[cur], px = price[cur], qty = +$("qty").value, lev = +$("lev").value;
+  if (px != null) applyPips(dir, orderType === "limit" && +$("limitPx").value > 0 ? +$("limitPx").value : px);
   const sl = +$("sl").value || null, tp = +$("tp").value || null;
   if (px == null) return say(cur === "NAS" ? "Entre d'abord le prix actuel du Nasdaq." : "Le prix n'est pas encore arrivé, patiente quelques secondes.");
   if (!(qty > 0)) return say("Indique une quantité supérieure à 0.");
   const entry = orderType === "limit" ? +$("limitPx").value : px;
-  if (!(entry > 0)) return say("Indique un prix limite.");
-  if (orderType === "limit" && ((dir === 1 && entry >= px) || (dir === -1 && entry <= px))) return say(dir === 1 ? "Un achat limite se place sous le prix actuel." : "Une vente limite se place au-dessus du prix actuel.");
+  if (!(entry > 0)) return say("Indique le prix d'entrée prévu, ou un écart en pips.");
+  if (orderType === "limit" && entry === px) return say("Ce prix est déjà atteint : passe l'ordre au marché.");
   if (sl && ((dir === 1 && sl >= entry) || (dir === -1 && sl <= entry))) return say(dir === 1 ? "Pour un achat, le stop doit être sous l'entrée." : "Pour une vente, le stop doit être au-dessus de l'entrée.");
   if (tp && ((dir === 1 && tp <= entry) || (dir === -1 && tp >= entry))) return say("L'objectif est du mauvais côté de l'entrée.");
   const need = (entry * qty) / lev;
   if (need > freeMargin()) return say(`Marge insuffisante : il faut ${usd(need)}, tu as ${usd(freeMargin())} de libre. Baisse la quantité ou monte le levier.`);
-  if (orderType === "limit") { S.orders.push({ id: S.nextId++, sym: cur, dir, qty, limit: entry, lev, sl, tp }); save(); renderAll(); renderPosLines(); say("Ordre limite enregistré, il s'exécutera quand le prix l'atteindra."); }
+  if (orderType === "limit") {
+    const above = entry > px, kind = (dir === 1) === above ? "stop" : "limite";
+    S.orders.push({ id: S.nextId++, sym: cur, dir, qty, limit: entry, above, kind, lev, sl, tp }); save(); renderAll(); renderPosLines();
+    const pips = Math.round(Math.abs(entry - px) / (PIPV[cur] || 1));
+    say(`Ordre en attente : ${dir === 1 ? "achat" : "vente"} ${kind} à ${fmt(entry, m.dec)}, soit ${pips} pips ${above ? "au-dessus" : "en dessous"} du prix. Il s'ouvrira tout seul quand le prix y arrivera.`);
+  }
   else { openPos(cur, dir, qty, px, lev, sl, tp); say(`${dir === 1 ? "Achat" : "Vente"} de ${qty} ${m.name} à ${fmt(px, m.dec)} exécuté.`); }
   if (tvMode && m.feed) { tvMode = false; drawTv(); chart.timeScale().scrollToRealTime(); renderIndicators(); renderPosLines(); say($("msg").textContent + " Ton trade s'affiche sur le graphique « mes trades » : TradingView ne permet pas d'y ajouter nos positions."); }
   if ($("autoReview").checked) reviewTrade({ dir, qty, entry, sl, tp, kind: orderType });
 }
 
+// ---------- pips : 1 pip = 10 $ sur le Bitcoin, 0,10 $ sur l'or, 1 point sur le Nasdaq ----------
+const PIPV = { BTC: 10, XAU: 0.1, NAS: 1 };
+function pipNote() { const el = $("pipNote"); if (el) el.textContent = `1 pip = ${{ BTC: "10 $", XAU: "0,10 $", NAS: "1 point" }[cur]} sur ${MARKETS[cur].name}. Les pips sont comptés depuis le prix d'entrée, dans le bon sens selon Acheter ou Vendre.`; }
+// les champs en pips remplissent les prix au moment de l'ordre (le sens dépend du bouton)
+function applyPips(dir, entry) {
+  const pv = PIPV[cur] || 1, d = MARKETS[cur].dec, sp = +$("slPips").value, tpp = +$("tpPips").value;
+  if (sp > 0) $("sl").value = (entry - dir * sp * pv).toFixed(d);
+  if (tpp > 0) $("tp").value = (entry + dir * tpp * pv).toFixed(d);
+}
+$("entPips").addEventListener("input", () => { const px = price[cur], v = +$("entPips").value; if (px != null && v) { $("limitPx").value = (px + v * (PIPV[cur] || 1)).toFixed(MARKETS[cur].dec); ticketCalc(); } });
+["slPips", "tpPips"].forEach(i => $(i).addEventListener("input", ticketCalc));
+
 // calcul en direct dans le ticket
 function ticketCalc() {
-  const px = price[cur], qty = +$("qty").value, lev = +$("lev").value, sl = +$("sl").value, tp = +$("tp").value;
+  const px = price[cur], qty = +$("qty").value, lev = +$("lev").value, pv = PIPV[cur] || 1;
   const entry = orderType === "limit" ? +$("limitPx").value : px;
+  // en pips, le risque et le gain ne dépendent pas du sens
+  const sl = +$("sl").value || (+$("slPips").value > 0 && entry > 0 ? entry - +$("slPips").value * pv : 0), tp = +$("tp").value || (+$("tpPips").value > 0 && entry > 0 ? entry + +$("tpPips").value * pv : 0);
   ["tRisk", "tGain", "tRR", "tNeed"].forEach(i => $(i).textContent = "–");
   if (!(entry > 0 && qty > 0)) return;
   $("tNeed").textContent = usd((entry * qty) / lev);
@@ -716,7 +744,8 @@ function renderAll() {
   const box = document.querySelector(".chartbox"), mp = mine.reduce((a, p) => a + pnl(p, price[p.sym]), 0);
   box.classList.toggle("intrade", mine.length > 0); box.classList.toggle("winning", mine.length > 0 && mp >= 0); box.classList.toggle("losing", mine.length > 0 && mp < 0);
   $("hud").innerHTML = `<div>Marge libre ${usd(freeMargin())} · P&amp;L <b class="${signCls(up)}">${sgn(up)}${usd(up)}</b></div>` +
-    mine.map(p => { const v = pnl(p, price[p.sym]); return `<div>${p.dir === 1 ? "Achat" : "Vente"} ${p.qty} @ ${fmt(p.entry, MARKETS[p.sym].dec)} <b class="${signCls(v)}">${sgn(v)}${usd(v)}</b><button data-close="${p.id}">Sortir</button></div>`; }).join("");
+    (mine.length > 1 ? `<div>${mine.length} trades en cours · <b class="${signCls(mp)}">${sgn(mp)}${usd(mp)}</b></div>` // un seul petit encart quand il y a plusieurs trades
+    : mine.map(p => { const v = pnl(p, price[p.sym]); return `<div>${p.dir === 1 ? "Achat" : "Vente"} ${p.qty} @ ${fmt(p.entry, MARKETS[p.sym].dec)} <b class="${signCls(v)}">${sgn(v)}${usd(v)}</b><button data-close="${p.id}">Sortir</button></div>`; }).join(""));
 
   $("posBody").innerHTML = S.positions.length ? S.positions.map(p => {
     const m = MARKETS[p.sym], v = pnl(p, price[p.sym]);
@@ -724,7 +753,7 @@ function renderAll() {
   }).join("") : '<tr><td colspan="9" class="empty">Aucune position. Choisis un marché, puis clique sur Acheter ou Vendre.</td></tr>';
   $("ordBody").innerHTML = S.orders.length ? S.orders.map(o => {
     const m = MARKETS[o.sym];
-    return `<tr><td>${m.name}</td><td>${side(o.dir)}</td><td>${o.qty}</td><td>${fmt(o.limit, m.dec)}</td><td>${o.sl ? fmt(o.sl, m.dec) : "–"}</td><td>${o.tp ? fmt(o.tp, m.dec) : "–"}</td><td><button data-cancel="${o.id}">Annuler</button></td></tr>`;
+    return `<tr><td>${m.name}</td><td>${side(o.dir)} ${o.kind || "limite"}</td><td>${o.qty}</td><td>${fmt(o.limit, m.dec)}${price[o.sym] != null ? ` <span class="small">(${Math.round(Math.abs(o.limit - price[o.sym]) / (PIPV[o.sym] || 1))} pips)</span>` : ""}</td><td>${o.sl ? fmt(o.sl, m.dec) : "–"}</td><td>${o.tp ? fmt(o.tp, m.dec) : "–"}</td><td><button data-cancel="${o.id}">Annuler</button></td></tr>`;
   }).join("") : '<tr><td colspan="7" class="empty">Aucun ordre en attente.</td></tr>';
 
   const H = S.history, wins = H.filter(h => h.pnl > 0), losses = H.filter(h => h.pnl <= 0);
@@ -1338,7 +1367,7 @@ function setupTopic() {
   inp.value = topic(); show(); connectLive();
   $("ntfySave").onclick = () => { try { const v = inp.value.trim().replace(/^https?:\/\/ntfy\.sh\//, ""); v ? localStorage.setItem(TOPIC_KEY, v) : localStorage.removeItem(TOPIC_KEY); } catch (e) {} show(); renderServer(); connectLive(); };
 }
-setupTopic();
+setupTopic(); pipNote();
 // ---------- compte d'entraînement de Claude (ordres passés par Claude, suivis par GitHub Actions) ----------
 let CLA = null;
 async function pullClaude() {
