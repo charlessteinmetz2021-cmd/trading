@@ -6,7 +6,7 @@ const T = process.env.NTFY_TOPIC;
 let fails = 0;
 const ok = (c, msg) => { console.log((c ? "OK   " : "ÉCHEC") + " · " + msg); if (!c) fails++; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const MK = { BTC: { name: "Bitcoin", binance: "BTCUSDT" }, XAU: { name: "Or", binance: "PAXGUSDT" }, NAS: { name: "Nasdaq", yahoo: "NQ=F" } };
+const MK = { BTC: { name: "Bitcoin", binance: "BTCUSDT" }, XAU: { name: "Or", binance: "PAXGUSDT" }, NAS: { name: "Nasdaq", yahoo: "NQ=F" }, EUR: { name: "Euro / dollar", binance: "EURUSDT", coinbase: "EURC-USD" } };
 async function getMinutes(sym) {
   const m = MK[sym];
   if (m.yahoo) {
@@ -23,7 +23,7 @@ const run = () => track({ acc, state, proposals, markets: MK, getMinutes });
 await run(); // initialise la lecture
 
 const last = {};
-for (const s of ["BTC", "XAU", "NAS"]) { const b = await getMinutes(s); last[s] = b[b.length - 1].close; ok(b.length > 10 && last[s] > 0, `prix ${s} disponible (${last[s]})`); }
+for (const s of ["BTC", "XAU", "NAS", "EUR"]) { const b = await getMinutes(s); last[s] = b[b.length - 1].close; ok(b.length > 10 && last[s] > 0, `prix ${s} disponible (${last[s]})`); }
 const mk = (sym, dir) => ({ id: `${sym}-test${Date.now()}${dir}`, sym, dir, entry: last[sym], stop: last[sym] * (1 - dir * 0.01), target: last[sym] * (1 + dir * 0.02) });
 const pB = mk("BTC", 1), pX = mk("XAU", -1), pN = mk("NAS", 1), pR = mk("BTC", -1);
 proposals.push(pB, pX, pR); // pN volontairement absent : l'ordre doit suffire

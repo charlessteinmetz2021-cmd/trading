@@ -11,7 +11,8 @@ const LC = window.LightweightCharts;
 const MARKETS = {
   BTC: { name: "Bitcoin", tv: "BITSTAMP:BTCUSD", feed: "BTCUSDT", dec: 2, step: 0.001 },
   XAU: { name: "Or", tv: "OANDA:XAUUSD", feed: "PAXGUSDT", dec: 2, step: 0.01 },
-  NAS: { name: "Nasdaq 100", tv: "OANDA:NAS100USD", feed: null, dec: 1, step: 0.1 },
+  NAS: { name: "Nasdaq 100", tv: "OANDA:NAS100USD", feed: null, dec: 1, step: 0.1, old: true }, // retiré : gardé seulement pour l'historique
+  EUR: { name: "Euro / dollar", tv: "OANDA:EURUSD", feed: "EURUSDT", dec: 5, step: 1000 },
 };
 const TF = [["1s", "1 s", null], ["5s", "5 s", null], ["15s", "15 s", null], ["30s", "30 s", null], ["1m", "1 min", "1"], ["5m", "5 min", "5"], ["15m", "15 min", "15"], ["1h", "1 h", "60"], ["4h", "4 h", "240"], ["1d", "Jour", "D"]];
 const FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
@@ -23,7 +24,7 @@ const fmt = (v, d = 2) => (v == null || isNaN(v) ? "–" : (+v).toLocaleString("
 const signCls = v => (v > 0 ? "gain" : v < 0 ? "loss" : "");
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-const price = { BTC: null, XAU: null, NAS: null };
+const price = { BTC: null, XAU: null, EUR: null };
 let SRV = null; // compte du serveur (trades acceptés depuis le téléphone ou le PC relié)
 let cur = "BTC", tf = "15m", orderType = "market", tool = "none", pending = null, tvMode = true;
 
@@ -34,12 +35,11 @@ let S = null;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 if (!S || !Array.isArray(S.positions)) S = fresh(10000);
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
-price.NAS = S.nasPrice;
 // au rechargement : on garde le marché, l'unité de temps et la vue ; avec un trade ouvert, on montre « mes trades »
 const VKEY = "atelier-vue-v1";
-try { const v = JSON.parse(localStorage.getItem(VKEY)) || {}; if (["BTC", "XAU", "NAS"].includes(v.cur)) cur = v.cur; if (TF.some(t => t[0] === v.tf)) tf = v.tf; if (typeof v.tvMode === "boolean") tvMode = v.tvMode; } catch (e) {}
-{ const open = S.positions.find(p => p.sym === cur) || S.orders.find(o => o.sym === cur) || S.positions[0] || S.orders[0];
-  if (open) { cur = open.sym; if (cur !== "NAS") tvMode = false; } }
+try { const v = JSON.parse(localStorage.getItem(VKEY)) || {}; if (["BTC", "XAU", "EUR"].includes(v.cur)) cur = v.cur; if (TF.some(t => t[0] === v.tf)) tf = v.tf; if (typeof v.tvMode === "boolean") tvMode = v.tvMode; } catch (e) {}
+{ const open = S.positions.filter(p => !MARKETS[p.sym]?.old).find(p => p.sym === cur) || S.orders.find(o => o.sym === cur) || S.positions[0] || S.orders[0];
+  if (open && !MARKETS[open.sym]?.old) { cur = open.sym; tvMode = false; } }
 setInterval(() => { try { localStorage.setItem(VKEY, JSON.stringify({ cur, tf, tvMode })); } catch (e) {} }, 1500);
 
 const DKEY = "atelier-dessins-v1";
@@ -81,7 +81,7 @@ function setPrecision() {
 }
 
 let klineWs = null;
-const CB = { BTCUSDT: "BTC-USD", PAXGUSDT: "PAXG-USD" };
+const CB = { BTCUSDT: "BTC-USD", PAXGUSDT: "PAXG-USD", EURUSDT: "EURC-USD" };
 const CB_GRAN = { "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 21600, "1d": 86400 };
 // Historique : Binance (deux adresses), puis Coinbase si Binance est bloqué chez l'utilisateur
 const SEC = { "1s": 1, "5s": 5, "15s": 15, "30s": 30 };
@@ -560,14 +560,14 @@ function drawTv() {
 
 // ---------- barres de contrôle ----------
 function renderSymbols() {
-  $("symbols").innerHTML = Object.entries(MARKETS).map(([k, m]) =>
+  $("symbols").innerHTML = Object.entries(MARKETS).filter(([, m]) => !m.old).map(([k, m]) =>
     `<button class="chip sym" data-k="${k}" aria-pressed="${k === cur}"><b>${m.name}</b><span id="px_${k}">${fmt(price[k], m.dec)}</span></button>`).join("");
   $("symbols").querySelectorAll("button").forEach(b => b.onclick = () => {
     if (b.dataset.k === cur) return;
     cur = b.dataset.k;
     // le ticket repart à zéro : les SL / TP / prix limite d'un marché n'ont pas de sens sur un autre
     ["sl", "tp", "limitPx", "slPips", "tpPips", "entPips"].forEach(i => $(i).value = ""); pipNote();
-    $("qty").value = { BTC: "0.01", XAU: "1", NAS: "1" }[cur];
+    $("qty").value = { BTC: "0.01", XAU: "1", EUR: "10000" }[cur];
     ["cEntry", "cStop", "cTp"].forEach(i => $(i).value = ""); calc();
     setType("market"); say(""); $("answer").hidden = true; lastIdea = null;
     refreshView();
@@ -591,10 +591,10 @@ let tickPoll = 0, feedName = "";
 // Prix en direct : Binance, sinon Coinbase en WebSocket, sinon interrogation de Coinbase chaque seconde
 function connect() {
   let opened = false;
-  const ws = new WebSocket("wss://data-stream.binance.vision/stream?streams=btcusdt@trade/paxgusdt@trade");
+  const ws = new WebSocket("wss://data-stream.binance.vision/stream?streams=btcusdt@trade/paxgusdt@trade/eurusdt@trade");
   const timer = setTimeout(() => { if (!opened) { ws.onclose = null; ws.close(); connectCoinbase(); } }, 5000);
   ws.onopen = () => { opened = true; clearTimeout(timer); wsOk = true; feedName = "Binance"; renderTicket(); };
-  ws.onmessage = ev => { try { const d = JSON.parse(ev.data).data; onPrice(d.s === "BTCUSDT" ? "BTC" : "XAU", +d.p); } catch (e) {} };
+  ws.onmessage = ev => { try { const d = JSON.parse(ev.data).data; onPrice({ BTCUSDT: "BTC", PAXGUSDT: "XAU", EURUSDT: "EUR" }[d.s], +d.p); } catch (e) {} };
   ws.onclose = () => { clearTimeout(timer); wsOk = false; renderTicket(); if (opened) setTimeout(connect, 3000); else connectCoinbase(); };
 }
 function connectCoinbase() {
@@ -603,14 +603,14 @@ function connectCoinbase() {
   try { ws = new WebSocket("wss://ws-feed.exchange.coinbase.com"); } catch (e) { return startTickPoll(); }
   const timer = setTimeout(() => { if (!opened) { ws.onclose = null; ws.close(); startTickPoll(); } }, 5000);
   ws.onopen = () => { opened = true; clearTimeout(timer); wsOk = true; feedName = "Coinbase"; clearInterval(tickPoll); tickPoll = 0;
-    ws.send(JSON.stringify({ type: "subscribe", product_ids: ["BTC-USD", "PAXG-USD"], channels: ["ticker"] })); renderTicket(); };
-  ws.onmessage = ev => { try { const d = JSON.parse(ev.data); if (d.type === "ticker" && d.price) onPrice(d.product_id === "BTC-USD" ? "BTC" : "XAU", +d.price); } catch (e) {} };
+    ws.send(JSON.stringify({ type: "subscribe", product_ids: ["BTC-USD", "PAXG-USD", "EURC-USD"], channels: ["ticker"] })); renderTicket(); };
+  ws.onmessage = ev => { try { const d = JSON.parse(ev.data); if (d.type === "ticker" && d.price) onPrice({ "BTC-USD": "BTC", "PAXG-USD": "XAU", "EURC-USD": "EUR" }[d.product_id], +d.price); } catch (e) {} };
   ws.onclose = () => { clearTimeout(timer); wsOk = false; renderTicket(); if (opened) setTimeout(connectCoinbase, 3000); else startTickPoll(); };
 }
 function startTickPoll() {
   if (tickPoll) return;
   feedName = "Coinbase, mise à jour chaque seconde";
-  const run = async () => { await Promise.all([["BTC", "BTC-USD"], ["XAU", "PAXG-USD"]].map(async ([k, id]) => { try { const r = await fetch(`https://api.exchange.coinbase.com/products/${id}/ticker`); const j = await r.json(); if (j.price) { wsOk = true; onPrice(k, +j.price); } } catch (e) {} })); renderTicket(); };
+  const run = async () => { await Promise.all([["BTC", "BTC-USD"], ["XAU", "PAXG-USD"], ["EUR", "EURC-USD"]].map(async ([k, id]) => { try { const r = await fetch(`https://api.exchange.coinbase.com/products/${id}/ticker`); const j = await r.json(); if (j.price) { wsOk = true; onPrice(k, +j.price); } } catch (e) {} })); renderTicket(); };
   run(); tickPoll = setInterval(run, 1000);
   setTimeout(() => { clearInterval(tickPoll); tickPoll = 0; connect(); }, 120000); // réessaie le direct toutes les 2 minutes
 }
@@ -696,9 +696,9 @@ function place(dir) {
   if ($("autoReview").checked) reviewTrade({ dir, qty, entry, sl, tp, kind: orderType });
 }
 
-// ---------- pips : 1 pip = 10 $ sur le Bitcoin, 0,10 $ sur l'or, 1 point sur le Nasdaq ----------
-const PIPV = { BTC: 10, XAU: 0.1, NAS: 1 };
-function pipNote() { const el = $("pipNote"); if (el) el.textContent = `1 pip = ${{ BTC: "10 $", XAU: "0,10 $", NAS: "1 point" }[cur]} sur ${MARKETS[cur].name}. Les pips sont comptés depuis le prix d'entrée, dans le bon sens selon Acheter ou Vendre.`; }
+// ---------- pips : 1 pip = 10 $ sur le Bitcoin, 0,10 $ sur l'or, 0,0001 sur l'euro/dollar ----------
+const PIPV = { BTC: 10, XAU: 0.1, EUR: 0.0001 };
+function pipNote() { const el = $("pipNote"); if (el) el.textContent = `1 pip = ${{ BTC: "10 $", XAU: "0,10 $", EUR: "0,0001" }[cur]} sur ${MARKETS[cur].name}. Les pips sont comptés depuis le prix d'entrée, dans le bon sens selon Acheter ou Vendre.`; }
 // les champs en pips remplissent les prix au moment de l'ordre (le sens dépend du bouton)
 function applyPips(dir, entry) {
   const pv = PIPV[cur] || 1, d = MARKETS[cur].dec, sp = +$("slPips").value, tpp = +$("tpPips").value;
@@ -1052,7 +1052,7 @@ function notify(p) {
 // ---------- compte partagé avec le téléphone (le serveur exécute les trades) ----------
 const TOPIC_KEY = "atelier-ntfy";
 const topic = () => { try { return localStorage.getItem(TOPIC_KEY) || ""; } catch (e) { return ""; } };
-const NAMES_FR = { BTC: "Bitcoin", XAU: "or", NAS: "Nasdaq" };
+const NAMES_FR = { BTC: "Bitcoin", XAU: "or", EUR: "Euro/dollar" };
 async function sendOrder(act, p, text) {
   const t = topic(); if (!t) return false;
   const tag = act === "accept" ? `${p.id}:${p.sym}:${p.dir}:${+(+p.stop).toFixed(5)}:${+(+p.target).toFixed(5)}` : p.id;
@@ -1209,11 +1209,11 @@ document.addEventListener("pointerdown", async e => {
 function renderServer() {
   if (!SRV) return;
   const box = $("srv"); box.hidden = !SRV.positions.length && !SRV.history.length;
-  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" };
+  const names = { BTC: "Bitcoin", XAU: "Or", EUR: "Euro/dollar" };
   let open = 0;
   $("srvPos").innerHTML = SRV.positions.map(p => {
-    const now = (p.sym !== "NAS" && price[p.sym]) || p.last || p.entry, v = (now - p.entry) * p.dir * p.qty; open += v;
-    const pips = (now - p.entry) * p.dir / ({ BTC: 10, XAU: 0.1, NAS: 1 }[p.sym] || 1);
+    const now = price[p.sym] || p.last || p.entry, v = (now - p.entry) * p.dir * p.qty; open += v;
+    const pips = (now - p.entry) * p.dir / ({ BTC: 10, XAU: 0.1, EUR: 0.0001 }[p.sym] || 1);
     return `<div class="prop scard" style="border-left:4px solid ${v >= 0 ? "var(--gain)" : "var(--loss)"}">
       <div><b>${p.isAdd ? "Renfort · " : ""}${p.dir === 1 ? "Achat" : "Vente"} ${names[p.sym] || p.sym}</b>${/-N\d/.test(p.prop || p.id) ? " 🌙" : ""}${p.locked != null ? ` <span class="pill" style="color:var(--gain)">🔒 ${p.locked > 0.1 ? "gain protégé" : "SL au point d'entrée"}</span>` : ""}
       <div class="small">Entrée ${fmt(p.entry)} · <span class="loss">SL ${fmt(p.stop)}</span> · <span class="gain">TP ${fmt(p.target)}</span> · prix ${fmt(now)}</div></div>
@@ -1227,9 +1227,9 @@ function renderServer() {
 // ---------- panneau « Trades en cours » : gain/perte en direct + bouton Clôturer ----------
 let openKey = "";
 function renderOpen() {
-  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" };
+  const names = { BTC: "Bitcoin", XAU: "Or", EUR: "Euro/dollar" };
   const loc = S.positions.map(p => ({ k: "L:" + p.id, p, v: pnl(p, price[p.sym]), where: "PC", can: price[p.sym] != null }));
-  const srv = (SRV?.positions || []).map(p => { const now = (p.sym !== "NAS" && price[p.sym]) || p.last || p.entry; return { k: "S:" + p.id, p, v: (now - p.entry) * p.dir * p.qty, where: "serveur", can: !!topic() && !closing.has(p.id), wait: closing.has(p.id) }; });
+  const srv = (SRV?.positions || []).map(p => { const now = price[p.sym] || p.last || p.entry; return { k: "S:" + p.id, p, v: (now - p.entry) * p.dir * p.qty, where: "serveur", can: !!topic() && !closing.has(p.id), wait: closing.has(p.id) }; });
   const all = [...loc, ...srv], box = $("openBox");
   box.hidden = !all.length; if (!all.length) { openKey = ""; return; }
   const key = all.map(x => x.k + (x.can ? 1 : 0) + (x.wait ? "w" : "")).join("|");
@@ -1337,10 +1337,10 @@ function renderDash() {
   const sess = n.from && hm >= n.from && hm < n.to ? ["🌙 Nuit", `jusqu'à ${n.to.replace(":", " h ")}`] : wd >= 1 && wd <= 5 && us.from && hm >= us.from && hm < us.to ? ["⚠️ Ouverture US", `pause jusqu'à ${us.to.replace(":", " h ")}`] : w.from && hm >= w.from && hm < w.to ? ["☀️ Séance du jour", `jusqu'à ${w.to.replace(":", " h ")}`] : ["Hors séance", `reprise à ${(hm < (w.from || "16:00") ? w.from : n.from || "00:00").replace(":", " h ")}`];
   $("dSess").textContent = sess[0]; $("dSessSub").textContent = sess[1];
   // pips du jour en direct : trades fermés + trades ouverts au prix actuel
-  const pip = { BTC: 10, XAU: 0.1, NAS: 1 }, today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
+  const pip = { BTC: 10, XAU: 0.1, EUR: 0.0001 }, today = new Date().toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
   const isN = x => /-N\d/.test(String(x.prop || x.id)), day = x => new Date(x).toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });
   const done = SRV.history.filter(h => day(h.closedAt) === today && !isN(h)).reduce((s, h) => s + (h.exit - h.entry) * h.dir / (pip[h.sym] || 1), 0);
-  const open = SRV.positions.filter(p => !isN(p)).reduce((s, p) => { const now = (p.sym !== "NAS" && price[p.sym]) || p.last || p.entry; return s + (now - p.entry) * p.dir / (pip[p.sym] || 1); }, 0);
+  const open = SRV.positions.filter(p => !isN(p)).reduce((s, p) => { const now = price[p.sym] || p.last || p.entry; return s + (now - p.entry) * p.dir / (pip[p.sym] || 1); }, 0);
   const goal = D.goal || 150;
   $("dGoal").textContent = `${Math.round(done)} / ${goal} pips`;
   $("dGoalBar").style.width = Math.max(0, Math.min(100, done / goal * 100)) + "%";
@@ -1350,7 +1350,7 @@ function renderDash() {
   $("dLoss").textContent = dayPnl < 0 ? `${usd(dayPnl)}` : "0 $";
   $("dLossBar").style.width = Math.max(0, Math.min(100, -dayPnl / maxL * 100)) + "%";
   $("dLossSub").textContent = `limite ${usd(-maxL)} · ${dayPnl < 0 ? Math.round(-dayPnl / maxL * 100) + " % utilisés" : "aucune perte aujourd'hui"}`;
-  const openPnl = SRV.positions.reduce((s, p) => { const now = (p.sym !== "NAS" && price[p.sym]) || p.last || p.entry; return s + (now - p.entry) * p.dir * p.qty; }, 0);
+  const openPnl = SRV.positions.reduce((s, p) => { const now = price[p.sym] || p.last || p.entry; return s + (now - p.entry) * p.dir * p.qty; }, 0);
   $("dAcc").textContent = usd(SRV.balance + openPnl);
   $("dAccSub").textContent = `${SRV.positions.length} trade(s) ouvert(s)${SRV.positions.length ? ` · ${sgn(openPnl)}${usd(openPnl)}` : ""}${D.warm?.inWarm ? ` · démarrage ${D.warm.n}/${D.warm.trades}` : ""}`;
   const gate = D.gate && !/hors|en dehors/.test(D.gate) ? D.gate : null;
@@ -1361,7 +1361,7 @@ setInterval(renderDash, 1000);
 // ---------- historique des trades (simulateur du PC + serveur) ----------
 let hFilter = "all", hLimit = 30, hKey = "";
 function renderHistory() {
-  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" }, pv = { BTC: 10, XAU: 0.1, NAS: 1 };
+  const names = { BTC: "Bitcoin", XAU: "Or", EUR: "Euro/dollar" }, pv = { BTC: 10, XAU: 0.1, EUR: 0.0001 };
   const pc = S.history.map(h => ({ src: "PC", t: h.t, sym: h.sym, dir: h.dir, entry: h.entry, exit: h.exit, why: h.reason, pnl: h.pnl }));
   const srv = (SRV?.history || []).filter(h => !String(h.id).startsWith("test")).map(h => ({ src: /-N\d/.test(String(h.prop || h.id)) ? "Serveur 🌙" : h.isAdd ? "Serveur (renfort)" : "Serveur", t: h.closedAt, sym: h.sym, dir: h.dir, entry: h.entry, exit: h.exit, why: h.why, pnl: h.pnl }));
   const rows = [...(hFilter !== "srv" ? pc : []), ...(hFilter !== "pc" ? srv : [])].sort((a, b) => b.t - a.t);
@@ -1410,12 +1410,12 @@ async function pullClaude() {
 function renderClaude() {
   if (!CLA) return;
   const box = $("cla"); box.hidden = !CLA.trades.length; if (box.hidden) return;
-  const names = { BTC: "Bitcoin", XAU: "Or", NAS: "Nasdaq" }, hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const names = { BTC: "Bitcoin", XAU: "Or", EUR: "Euro/dollar" }, hm = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const esc = x => String(x ?? "").replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
   const live = CLA.trades.filter(t => t.status === "open" || t.status === "pending");
   let open = 0;
   $("claPos").innerHTML = live.map(t => {
-    const now = (t.sym !== "NAS" && price[t.sym]) || t.last;
+    const now = price[t.sym] || t.last;
     const v = t.status === "open" && now != null ? (now - t.fill) * t.dir * t.qty : 0; open += v;
     const head = `<b>${t.dir === 1 ? "Achat" : "Vente"} ${names[t.sym] || t.sym}</b>${t.status === "open" ? `ouvert à ${fmt(t.fill)} (${hm(t.openedAt)})` : `ordre limite à ${fmt(t.entry)}, en attente`} · SL ${fmt(t.stop)} · TP ${fmt(t.target)}`;
     const pl = t.status === "open" ? `<br>Prix ${fmt(now)} · <span style="color:${v >= 0 ? "var(--gain)" : "var(--loss)"}">${v >= 0 ? "+" : ""}${fmt(v)} $</span>` : `<br>Prix ${fmt(now)}`;

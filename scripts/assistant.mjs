@@ -9,7 +9,7 @@ import { scoreMarket } from "../signals.js";
 import { loadAccount, saveAccount, track, manage, proposalActions, send } from "./suivi.mjs";
 
 const cfg = JSON.parse(readFileSync("assistant-config.json", "utf8"));
-const MARKETS = { BTC: { name: "Bitcoin", binance: "BTCUSDT", coinbase: "BTC-USD", dec: 2 }, XAU: { name: "Or", binance: "PAXGUSDT", coinbase: "PAXG-USD", dec: 2 }, NAS: { name: "Nasdaq", yahoo: "NQ=F", dec: 2 } };
+const MARKETS = { BTC: { name: "Bitcoin", binance: "BTCUSDT", coinbase: "BTC-USD", dec: 2 }, XAU: { name: "Or", binance: "PAXGUSDT", coinbase: "PAXG-USD", dec: 2 }, NAS: { name: "Nasdaq", yahoo: "NQ=F", dec: 2 }, EUR: { name: "Euro / dollar", binance: "EURUSDT", coinbase: "EURC-USD", dec: 5 } };
 const STEP = { "5m": 300, "15m": 900, "1h": 3600, "4h": 14400 };
 const CB_GRAN = { "5m": 300, "15m": 900, "1h": 3600, "4h": 21600 };
 const state = existsSync("assistant-state.json") ? JSON.parse(readFileSync("assistant-state.json", "utf8")) : { day: "", count: 0, lastSig: {} };
@@ -50,7 +50,7 @@ async function calendar() {
   try {
     const r = await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", { headers: { "User-Agent": "atelier-trading" } });
     const ev = await r.json();
-    return ev.filter(e => e.impact === "High" && ["USD", "ALL"].includes(e.country)).map(e => ({ title: e.title, t: Date.parse(e.date) }));
+    return ev.filter(e => e.impact === "High" && ["USD", "EUR", "ALL"].includes(e.country)).map(e => ({ title: e.title, t: Date.parse(e.date) }));
   } catch (e) { log("calendrier indisponible", e?.message || e); return null; }
 }
 const cal = await calendar();
@@ -89,7 +89,7 @@ async function notify(p) {
   await send({
     priority: 4, tags: [p.dir === 1 ? "chart_with_upwards_trend" : "chart_with_downwards_trend"],
     title: `${p.dir === 1 ? "Achat" : "Vente"} ${m.name} proposé`,
-    message: `Entrée ${f(p.entry)} · SL ${f(p.stop)} · TP ${f(p.target)} (+${Math.round(Math.abs(p.target - p.entry) / ({ BTC: 1, XAU: 0.1, NAS: 1, ...(cfg.pip || {}) })[p.sym])} pips)${p.confidence ? ` · confiance ${p.confidence}/10` : ""}${state.pips ? `\nAujourd'hui : ${state.pips.done >= 0 ? "+" : ""}${state.pips.done} pips sur un objectif de ${(cfg.goalPips || {}).max || 150}` : ""}\n${p.reason}`,
+    message: `Entrée ${f(p.entry)} · SL ${f(p.stop)} · TP ${f(p.target)} (+${Math.round(Math.abs(p.target - p.entry) / ({ BTC: 1, XAU: 0.1, NAS: 1, EUR: 0.0001, ...(cfg.pip || {}) })[p.sym])} pips)${p.confidence ? ` · confiance ${p.confidence}/10` : ""}${state.pips ? `\nAujourd'hui : ${state.pips.done >= 0 ? "+" : ""}${state.pips.done} pips sur un objectif de ${(cfg.goalPips || {}).max || 150}` : ""}\n${p.reason}`,
     actions: proposalActions(p, cfg.siteUrl),
   });
 }
@@ -129,7 +129,7 @@ if (process.env.TEST_NOTIF === "true") {
 // 3) chercher de nouveaux trades
 const scores = {};
 // Pips : or 0,10 $, Nasdaq 1 point, Bitcoin 1 $ (réglable dans assistant-config.json)
-const PIP = { BTC: 1, XAU: 0.1, NAS: 1, ...(cfg.pip || {}) };
+const PIP = { BTC: 1, XAU: 0.1, NAS: 1, EUR: 0.0001, ...(cfg.pip || {}) };
 const pipsOf = (p, to) => ((to - p.entry) * p.dir) / PIP[p.sym];
 const parisNow = () => { const s = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }); return { day: s.slice(0, 10), hm: s.slice(11, 16), wd: new Date(s.replace(" ", "T")).getDay() }; };
 const parisDay = t => new Date(t).toLocaleDateString("fr-CA", { timeZone: "Europe/Paris" });

@@ -1,6 +1,7 @@
 {
   "markets": [
-    "BTC"
+    "BTC",
+    "EUR"
   ],
   "timeframe": "15m",
   "minScore": 8,
@@ -22,6 +23,7 @@
   "pip": {
     "BTC": 10,
     "XAU": 0.1,
+    "EUR": 0.0001,
     "NAS": 1
   },
   "usOpen": {

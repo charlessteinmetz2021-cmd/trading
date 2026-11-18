@@ -20,7 +20,7 @@ const pnlOf = (p, price) => (price - p.entry) * p.dir * p.qty;
 
 // Boutons à mettre sur une notification de proposition.
 // Ils publient sur ton propre sujet : tu vois tout de suite « Reçu », et le serveur lit l'ordre entre crochets.
-const NAMES = { BTC: "Bitcoin", XAU: "or", NAS: "Nasdaq" };
+const NAMES = { BTC: "Bitcoin", XAU: "or", NAS: "Nasdaq", EUR: "euro/dollar" };
 const order = (act, id, text) => ({ action: "http", label: act === "accept" ? "Accepter" : act === "refuse" ? "Refuser" : "Fermer le trade",
   url: `https://ntfy.sh/${process.env.NTFY_TOPIC}`, method: "POST", headers: { Tags: act === "refuse" ? "no_entry_sign" : "white_check_mark", Priority: "3" },
   body: `${text} [${act}:${id}]`, clear: true });
