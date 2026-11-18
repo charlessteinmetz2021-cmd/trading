@@ -32,7 +32,7 @@ async function binance(symbol, coinbase) {
   return (await r.json()).map(k => ({ time: k[0], low: +k[1], high: +k[2], open: +k[3], close: +k[4] })).sort((a, b) => a.time - b.time);
 }
 // Nasdaq : l'indice comptant (^NDX), comme le graphique NAS100 du site, et pas le contrat à terme.
-export const FEEDS = { BTC: () => binance("BTCUSDT", "BTC-USD"), XAU: () => binance("PAXGUSDT", "PAXG-USD"), NAS: () => yahoo("^NDX"), EUR: () => binance("EURUSDT", "EURC-USD") };
+export const FEEDS = { BTC: () => binance("BTCUSDT", "BTC-USD"), XAU: () => binance("PAXGUSDT", "PAXG-USD"), NAS: () => yahoo("^NDX"), EUR: () => yahoo("EURUSD=X") };
 
 // Rejoue un ordre sur les bougies d'une minute. Renvoie l'état de l'ordre.
 export function replay(o, bars, now = Date.now()) {

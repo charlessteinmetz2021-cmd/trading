@@ -6,7 +6,7 @@ const T = process.env.NTFY_TOPIC;
 let fails = 0;
 const ok = (c, msg) => { console.log((c ? "OK   " : "ÉCHEC") + " · " + msg); if (!c) fails++; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const MK = { BTC: { name: "Bitcoin", binance: "BTCUSDT" }, XAU: { name: "Or", binance: "PAXGUSDT" }, NAS: { name: "Nasdaq", yahoo: "NQ=F" }, EUR: { name: "Euro / dollar", binance: "EURUSDT", coinbase: "EURC-USD" } };
+const MK = { BTC: { name: "Bitcoin", binance: "BTCUSDT" }, XAU: { name: "Or", binance: "PAXGUSDT" }, NAS: { name: "Nasdaq", yahoo: "NQ=F" }, EUR: { name: "Euro / dollar", yahoo: "EURUSD=X" } };
 async function getMinutes(sym) {
   const m = MK[sym];
   if (m.yahoo) {

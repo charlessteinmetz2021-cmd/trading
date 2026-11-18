@@ -9,7 +9,7 @@ import { scoreMarket } from "../signals.js";
 import { loadAccount, saveAccount, track, manage, proposalActions, send } from "./suivi.mjs";
 
 const cfg = JSON.parse(readFileSync("assistant-config.json", "utf8"));
-const MARKETS = { BTC: { name: "Bitcoin", binance: "BTCUSDT", coinbase: "BTC-USD", dec: 2 }, XAU: { name: "Or", binance: "PAXGUSDT", coinbase: "PAXG-USD", dec: 2 }, NAS: { name: "Nasdaq", yahoo: "NQ=F", dec: 2 }, EUR: { name: "Euro / dollar", binance: "EURUSDT", coinbase: "EURC-USD", dec: 5 } };
+const MARKETS = { BTC: { name: "Bitcoin", binance: "BTCUSDT", coinbase: "BTC-USD", dec: 2 }, XAU: { name: "Or", binance: "PAXGUSDT", coinbase: "PAXG-USD", dec: 2 }, NAS: { name: "Nasdaq", yahoo: "NQ=F", dec: 2 }, EUR: { name: "Euro / dollar", yahoo: "EURUSD=X", dec: 5 } };
 const STEP = { "5m": 300, "15m": 900, "1h": 3600, "4h": 14400 };
 const CB_GRAN = { "5m": 300, "15m": 900, "1h": 3600, "4h": 21600 };
 const state = existsSync("assistant-state.json") ? JSON.parse(readFileSync("assistant-state.json", "utf8")) : { day: "", count: 0, lastSig: {} };
