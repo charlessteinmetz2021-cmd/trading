@@ -19,7 +19,7 @@ async function yahoo15(sym) {
   const res = (await r.json()).chart.result[0], q = res.indicators.quote[0];
   return res.timestamp.map((t, i) => ({ time: t, open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i], volume: q.volume[i] || 0 })).filter(x => x.close != null && x.high != null);
 }
-const hourParis = t => +new Date(t * 1000).toLocaleString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" });
+const hourParis = t => parseInt(new Date(t * 1000).toLocaleString("en-GB", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" }), 10);
 function to1h(b) { const o = []; for (const x of b) { const t = x.time - (x.time % 3600), l = o[o.length - 1]; if (l && l.time === t) { l.high = Math.max(l.high, x.high); l.low = Math.min(l.low, x.low); l.close = x.close; } else o.push({ ...x, time: t }); } return o; }
 function adx(b, n = 14) {
   const tr = [], pd = [], md = [];
@@ -63,6 +63,13 @@ async function run(name, b, cost) {
     "H base, pas en bout de range 24h": s => Math.abs(s.score) >= 8 && (s.dir === 1 ? s.pos < 0.8 : s.pos > 0.2),
     "I 1h + ADX>25": s => Math.abs(s.score) >= 8 && Math.sign(s.hs) === s.dir && Math.abs(s.hs) >= 4 && s.adx > 25,
     "J 1h + pas en bout de range": s => Math.abs(s.score) >= 8 && Math.sign(s.hs) === s.dir && Math.abs(s.hs) >= 4 && (s.dir === 1 ? s.pos < 0.8 : s.pos > 0.2),
+    "L score 10 + ADX>25": s => Math.abs(s.score) >= 10 && s.adx > 25,
+    "M score 10 + 1h": s => Math.abs(s.score) >= 10 && Math.sign(s.hs) === s.dir && Math.abs(s.hs) >= 4,
+    "N ADX>25 + 16h-22h": s => Math.abs(s.score) >= 8 && s.adx > 25 && s.hour >= 16 && s.hour < 22,
+    "O score 10 + 8h-18h": s => Math.abs(s.score) >= 10 && s.hour >= 8 && s.hour < 18,
+    "P score 10 + 1h + 8h-18h": s => Math.abs(s.score) >= 10 && Math.sign(s.hs) === s.dir && Math.abs(s.hs) >= 4 && s.hour >= 8 && s.hour < 18,
+    "Q ADX>25 + 0h-3h": s => Math.abs(s.score) >= 8 && s.adx > 25 && s.hour < 3,
+    "R score 10 + 0h-3h": s => Math.abs(s.score) >= 10 && s.hour < 3,
     "K score 6 + 1h": s => Math.abs(s.score) >= 6 && Math.sign(s.hs) === s.dir && Math.abs(s.hs) >= 4,
   };
   const half = b[Math.floor(W + (b.length - W) * 0.6)].time;
