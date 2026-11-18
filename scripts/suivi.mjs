@@ -47,8 +47,12 @@ async function poll(topic, key, state) {
   try {
     const r = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=${state[key] || "12h"}`);
     if (!r.ok) { log("lecture", key, r.status); return []; }
-    const msgs = (await r.text()).split("\n").filter(Boolean).map(l => JSON.parse(l)).filter(m => m.event === "message");
+    let msgs = (await r.text()).split("\n").filter(Boolean).map(l => JSON.parse(l)).filter(m => m.event === "message");
     if (msgs.length) state[key] = msgs[msgs.length - 1].id;
+    // ntfy renvoie parfois un message déjà lu : on garde les derniers identifiants traités pour ne jamais ouvrir deux fois le même trade
+    const seen = new Set(state.seenMsgs || []);
+    msgs = msgs.filter(m => !seen.has(m.id));
+    state.seenMsgs = [...seen, ...msgs.map(m => m.id)].slice(-300);
     return msgs;
   } catch (e) { log("lecture impossible", key, e?.message || e); return []; }
 }
