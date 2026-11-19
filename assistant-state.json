@@ -8,7 +8,7 @@
   "EUR": "1795086900:1"
  },
  "ctlSince": "RdVmvvV8xG6b",
- "mainSince": "4Y2awqSFdZqT",
+ "mainSince": "s4WvJv9jth34",
  "pips": {
   "day": "2026-11-19",
   "done": 0,
@@ -22,12 +22,15 @@
   "XpLpXK9kgk4d",
   "IdnD9lG3wUjI",
   "l4jZzzvEW2mH",
-  "4Y2awqSFdZqT"
+  "4Y2awqSFdZqT",
+  "s4WvJv9jth34"
  ],
  "alerts": {
   "usdchf-achat-1911": {},
   "gbpusd-vente-1911": {},
   "eurusd-vente-1911": {},
-  "usdcad-achat-1911": {}
+  "usdcad-achat-1911": {
+   "near": true
+  }
  }
 }
