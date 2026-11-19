@@ -332,12 +332,31 @@ async function alerts() {
     const st = state.alerts[a.id] ||= {}; if (st.done) continue;
     let px; try { const b = await yahoo(a.yahoo, "1m", "1d"); px = b.at(-1).close + (a.offset || 0); } catch (e) { continue; }
     const d = a.lo < 10 ? 4 : 2, f = v => v.toFixed(d), sens = a.dir === 1 ? "ACHAT" : "VENTE";
-    const plan = `${sens} ${a.name} zone ${f(a.lo)}-${f(a.hi)} · stop ${f(a.stop)} · objectif ${f(a.target)} · 0,01 lot · attends la confirmation en 5 min`;
+    const plan = `${sens} ${a.name} zone ${f(a.lo)}-${f(a.hi)} · stop ${f(a.stop)} · objectif ${f(a.target)} · 0,01 lot · je t'envoie ✅ quand c'est confirmé`;
     if ((a.cancelAbove && px >= a.cancelAbove) || (a.cancelBelow && px <= a.cancelBelow)) {
-      if (!st.inZone) { st.done = true; await send({ title: `❌ ${a.name} : plan annulé`, message: `Prix ${f(px)} : ${px >= (a.cancelAbove ?? Infinity) ? "au-dessus du stop prévu" : "la cible a été atteinte sans entrée"}. On ne prend pas ce trade.`, priority: 3, tags: ["x"] }); }
+      if (!st.confirmed) { st.done = true; await send({ title: `❌ ${a.name} : plan annulé`, message: `Prix ${f(px)} : ${px >= (a.cancelAbove ?? Infinity) ? "au-dessus du stop prévu" : "la cible a été atteinte sans entrée"}. On ne prend pas ce trade.`, priority: 3, tags: ["x"] }); }
       continue;
     }
-    if (px >= a.lo && px <= a.hi) { if (!st.inZone) { st.inZone = true; await send({ title: `🎯 ${a.name} DANS LA ZONE (${f(px)})`, message: plan, priority: 5, tags: ["dart"] }); } continue; }
+    if (px >= a.lo && px <= a.hi && !st.inZone) { st.inZone = true; st.zoneAt = Math.floor(Date.now() / 1000) - 60; await send({ title: `🎯 ${a.name} dans la zone (${f(px)})`, message: `Ne rentre pas encore : j'attends la confirmation. ${plan}`, priority: 3, tags: ["dart"] }); continue; }
+    if (st.inZone && !st.confirmed) { // confirmation : prise de liquidité dans la zone puis cassure de structure en 1 min (BOS par une clôture)
+      try {
+        const m1 = (await yahoo(a.yahoo, "1m", "1d")).map(x => ({ ...x, high: x.high + (a.offset || 0), low: x.low + (a.offset || 0), close: x.close + (a.offset || 0) }));
+        const since = m1.filter(x => x.time >= st.zoneAt); if (since.length < 4) continue;
+        const ext = a.dir === 1 ? since.reduce((m, x) => x.low < m.low ? x : m) : since.reduce((m, x) => x.high > m.high ? x : m);
+        const k = m1.indexOf(ext), before = m1.slice(Math.max(0, k - 10), k), after = m1.slice(k + 1);
+        if (!before.length || !after.length) continue;
+        const lvl = a.dir === 1 ? Math.max(...before.map(x => x.high)) : Math.min(...before.map(x => x.low));
+        const swept = a.dir === 1 ? ext.low > a.stop : ext.high < a.stop;
+        const bos = after.find(x => a.dir === 1 ? x.close > lvl : x.close < lvl);
+        const now = m1.at(-1).close, rr = (a.target - now) * a.dir / ((now - a.stop) * a.dir);
+        if (swept && bos && rr >= 1.5) {
+          st.confirmed = true;
+          await send({ title: `✅ ${a.name} CONFIRMÉ : ${a.dir === 1 ? "ACHÈTE" : "VENDS"} MAINTENANT`, message: `Prix ${f(now)} · stop ${f(a.stop)} · objectif ${f(a.target)} · ratio ${rr.toFixed(1)} R · 0,01 lot.\nLe prix a pris la liquidité à ${f(a.dir === 1 ? ext.low : ext.high)} puis a cassé ${f(lvl)} en 1 min. Stop au point d'entrée dès +1 R.`, priority: 5, tags: ["white_check_mark"] });
+        } else if (bos && rr < 1.5 && !st.late) { st.late = true; await send({ title: `⌛ ${a.name} : confirmation trop tardive`, message: `Le prix est déjà à ${f(now)}, le ratio n'est plus que de ${rr.toFixed(1)} R. On ne court pas après.`, priority: 3, tags: ["hourglass"] }); }
+      } catch (e) { log("confirmation", a.id, e?.message || e); }
+      continue;
+    }
+    if (st.inZone) continue;
     const dist = px < a.lo ? a.lo - px : px - a.hi;
     if (dist <= a.near && !st.near) { st.near = true; await send({ title: `⏳ ${a.name} approche de la zone (${f(px)})`, message: `Prépare-toi : ${plan}`, priority: 4, tags: ["hourglass"] }); }
   }
