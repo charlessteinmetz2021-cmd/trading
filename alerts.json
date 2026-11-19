@@ -68,5 +68,20 @@
   "cancelAbove": 63650,
   "cancelBelow": 62050,
   "until": "2026-11-19T22:00:00+01:00"
+ },
+ {
+  "id": "eurusd-vente2-1911",
+  "yahoo": "EURUSD=X",
+  "offset": -0.0004,
+  "name": "EUR/USD (zone proche)",
+  "dir": -1,
+  "lo": 1.0985,
+  "hi": 1.0989,
+  "stop": 1.0999,
+  "target": 1.0956,
+  "near": 0.0004,
+  "cancelAbove": 1.0999,
+  "cancelBelow": 1.096,
+  "until": "2026-11-19T21:30:00+01:00"
  }
 ]
