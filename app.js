@@ -1307,6 +1307,11 @@ function onServerEvent(m) {
     try { const ac = new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 880; g.gain.value = 0.08; o.start(); o.stop(ac.currentTime + 0.25); } catch (e) {}
   }
   if (!/\[(accept|refuse|close|closeall):/.test(msg)) liveToast(title, msg.split("\n")[0]);
+  // alertes de prix du serveur (🎯 zone, ⏳ approche, ❌ annulé) : notification du PC + son
+  if (/^(🎯|⏳|❌)/.test(title)) {
+    try { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: msg, tag: "alerte-" + title.slice(0, 20), requireInteraction: title.startsWith("🎯") }); } catch (e) {}
+    try { const ac = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.25, 0.5].forEach(d => { const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = title.startsWith("🎯") ? 988 : 660; g.gain.value = 0.15; o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.15); }); } catch (e) {}
+  }
   else liveToast("Ordre envoyé au serveur", msg.replace(/\s*\[[^\]]*\]\s*$/, ""));
   // le compte du serveur est republié environ une minute après chaque événement
   [20, 50, 80, 120].forEach(s => setTimeout(() => { pullServerAccount(); pullServerProposals(); }, s * 1000));
@@ -1432,3 +1437,6 @@ pullServerAccount(); setInterval(pullServerAccount, 30000); setInterval(renderSe
 pullServerProposals().then(handleHash);
 setInterval(pullServerProposals, 60000);
 window.addEventListener("hashchange", handleHash);
+
+// demande l'autorisation des notifications du PC au premier clic (les navigateurs l'exigent)
+document.addEventListener("pointerdown", () => { try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch (e) {} }, { once: true });
