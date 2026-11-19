@@ -21,5 +21,10 @@
  "seenMsgs": [
   "XpLpXK9kgk4d",
   "IdnD9lG3wUjI"
- ]
+ ],
+ "alerts": {
+  "usdchf-achat-1911": {},
+  "gbpusd-vente-1911": {},
+  "eurusd-vente-1911": {}
+ }
 }
