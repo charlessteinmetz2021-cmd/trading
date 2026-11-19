@@ -62,7 +62,7 @@ for (const [name, [b, step, k]] of Object.entries(tfs)) {
   console.log(`\n## ${name} (${b.length} bougies, ATR ${f(atr)})`);
   console.log(`Structure : ${trend}. Derniers sommets : ${H.map(s => f(s.p)).join(" → ")}. Derniers creux : ${L.map(s => f(s.p)).join(" → ")}.`);
   console.log(`Dernier BOS : ${bos}.`);
-  const eqs = [...eq(allH, "EQH"), ...eq(allL, "EQL")]; console.log(`Liquidité égale : ${eqs.length ? eqs.join(" ; ") : "aucune"}.`);
+  const eqs = [...new Set([...eq(allH, "EQH"), ...eq(allL, "EQL")])].slice(-8); console.log(`Liquidité égale : ${eqs.length ? eqs.join(" ; ") : "aucune"}.`);
   console.log(`Imbalances non comblées : ${fvg.length ? fvg.join(" ; ") : "aucune proche"}.`);
   console.log(`MM : EMA20 ${f(e20)}, EMA50 ${f(e50)}, SMA200 ${f(s200)} (prix ${px > e20 ? ">" : "<"} EMA20, ${px > e50 ? ">" : "<"} EMA50, ${s200 ? (px > s200 ? ">" : "<") : "?"} SMA200).`);
   console.log(`Ichimoku : tenkan ${f(ic.tenkan.at(-1)?.value ?? ic.tenkan.at(-1))}, kijun ${f(ic.kijun.at(-1)?.value ?? ic.kijun.at(-1))}, nuage ${f(Math.min(sa, sb))}-${f(Math.max(sa, sb))} → prix ${px > Math.max(sa, sb) ? "au-dessus" : px < Math.min(sa, sb) ? "sous" : "dans"} le nuage.`);
