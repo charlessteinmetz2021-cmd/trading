@@ -14,19 +14,6 @@
   "until": "2026-11-19T21:30:00+01:00"
  },
  {
-  "id": "gbpusd-vente-1911",
-  "yahoo": "GBPUSD=X",
-  "name": "GBP/USD",
-  "dir": -1,
-  "lo": 1.3176,
-  "hi": 1.3182,
-  "stop": 1.3192,
-  "target": 1.312,
-  "near": 0.0006,
-  "cancelAbove": 1.3192,
-  "until": "2026-11-19T21:30:00+01:00"
- },
- {
   "id": "eurusd-vente-1911",
   "yahoo": "EURUSD=X",
   "offset": -0.0004,
@@ -39,20 +26,6 @@
   "near": 0.0006,
   "cancelAbove": 1.1026,
   "cancelBelow": 1.0955,
-  "until": "2026-11-19T21:30:00+01:00"
- },
- {
-  "id": "usdcad-achat-1911",
-  "yahoo": "USDCAD=X",
-  "name": "USD/CAD",
-  "dir": 1,
-  "lo": 1.4298,
-  "hi": 1.4302,
-  "stop": 1.428,
-  "target": 1.4355,
-  "near": 0.0006,
-  "cancelBelow": 1.428,
-  "cancelAbove": 1.4355,
   "until": "2026-11-19T21:30:00+01:00"
  },
  {

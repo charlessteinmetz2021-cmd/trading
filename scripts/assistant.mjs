@@ -330,14 +330,15 @@ async function alerts() {
   for (const a of list) {
     if (a.until && Date.now() > Date.parse(a.until)) continue;
     const st = state.alerts[a.id] ||= {}; if (st.done) continue;
-    let px; try { const b = await yahoo(a.yahoo, "1m", "1d"); px = b.at(-1).close + (a.offset || 0); } catch (e) { continue; }
+    let px, lo3, hi3; try { const b = await yahoo(a.yahoo, "1m", "1d"); px = b.at(-1).close + (a.offset || 0); const r = b.slice(-3); lo3 = Math.min(...r.map(x => x.low)) + (a.offset || 0); hi3 = Math.max(...r.map(x => x.high)) + (a.offset || 0); } catch (e) { continue; }
     const d = a.lo < 10 ? 4 : 2, f = v => v.toFixed(d), sens = a.dir === 1 ? "ACHAT" : "VENTE";
     const plan = `${sens} ${a.name} zone ${f(a.lo)}-${f(a.hi)} · stop ${f(a.stop)} · objectif ${f(a.target)} · 0,01 lot · je t'envoie ✅ quand c'est confirmé`;
     if ((a.cancelAbove && px >= a.cancelAbove) || (a.cancelBelow && px <= a.cancelBelow)) {
       if (!st.confirmed) { st.done = true; await send({ title: `❌ ${a.name} : plan annulé`, message: `Prix ${f(px)} : ${px >= (a.cancelAbove ?? Infinity) ? "au-dessus du stop prévu" : "la cible a été atteinte sans entrée"}. On ne prend pas ce trade.`, priority: 3, tags: ["x"] }); }
       continue;
     }
-    if (px >= a.lo && px <= a.hi && !st.inZone) { st.inZone = true; st.zoneAt = Math.floor(Date.now() / 1000) - 60; await send({ title: `🎯 ${a.name} dans la zone (${f(px)})`, message: `Ne rentre pas encore : j'attends la confirmation. ${plan}`, priority: 3, tags: ["dart"] }); continue; }
+    const touched = a.dir === 1 ? lo3 <= a.hi && px > a.stop : hi3 >= a.lo && px < a.stop; // mèche dans la zone sur les 3 dernières minutes (un passage rapide entre deux contrôles compte aussi)
+    if (touched && !st.inZone) { st.inZone = true; st.zoneAt = Math.floor(Date.now() / 1000) - 60; await send({ title: `🎯 ${a.name} dans la zone (${f(px)})`, message: `Ne rentre pas encore : j'attends la confirmation. ${plan}`, priority: 3, tags: ["dart"] }); continue; }
     if (st.inZone && !st.confirmed) { // confirmation : prise de liquidité dans la zone puis cassure de structure en 1 min (BOS par une clôture)
       try {
         const m1 = (await yahoo(a.yahoo, "1m", "1d")).map(x => ({ ...x, high: x.high + (a.offset || 0), low: x.low + (a.offset || 0), close: x.close + (a.offset || 0) }));
