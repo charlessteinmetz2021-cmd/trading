@@ -8,7 +8,7 @@
   "EUR": "1795086900:1"
  },
  "ctlSince": "RdVmvvV8xG6b",
- "mainSince": "9nZ0SBz05liu",
+ "mainSince": "OGRD3KkbKtpn",
  "pips": {
   "day": "2026-11-19",
   "done": 0,
@@ -26,7 +26,9 @@
   "s4WvJv9jth34",
   "eQUQUpJf19Wi",
   "CAtFd6YSlemt",
-  "9nZ0SBz05liu"
+  "9nZ0SBz05liu",
+  "dpXxbNMMOluM",
+  "OGRD3KkbKtpn"
  ],
  "alerts": {
   "usdchf-achat-1911": {},
@@ -42,7 +44,8 @@
   "btc-vente-1911b": {
    "near": true,
    "inZone": true,
-   "zoneAt": 1795109514
+   "zoneAt": 1795109514,
+   "late": true
   }
  }
 }
