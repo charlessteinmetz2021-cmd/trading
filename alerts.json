@@ -56,16 +56,16 @@
   "until": "2026-11-19T21:30:00+01:00"
  },
  {
-  "id": "btc-vente-1911",
+  "id": "btc-vente-1911b",
   "yahoo": "BTC-USD",
   "name": "Bitcoin",
   "dir": -1,
-  "lo": 63300,
-  "hi": 63450,
-  "stop": 63650,
+  "lo": 63050,
+  "hi": 63200,
+  "stop": 63350,
   "target": 62050,
-  "near": 120,
-  "cancelAbove": 63650,
+  "near": 100,
+  "cancelAbove": 63350,
   "cancelBelow": 62050,
   "until": "2026-11-19T22:00:00+01:00"
  },
