@@ -32,6 +32,9 @@
   "usdcad-achat-1911": {
    "near": true
   },
-  "btc-vente-1911": {}
+  "btc-vente-1911": {},
+  "eurusd-vente2-1911": {
+   "near": true
+  }
  }
 }
