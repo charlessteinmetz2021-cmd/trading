@@ -318,7 +318,33 @@ function commit(force) {
   } catch (e) { log("enregistrement impossible", e?.message || e); }
 }
 for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { log("arrêt demandé, j'enregistre"); commit(true); process.exit(0); });
+// Alertes de prix (alerts.json, écrit par Claude) : notification quand un marché approche ou touche sa zone, ou quand le plan est annulé
+// Niveaux exprimés en prix du broker de Fany ; offset = écart broker - Yahoo.
+let lastAlert = 0;
+async function alerts() {
+  if (Date.now() - lastAlert < 60000) return; lastAlert = Date.now();
+  if (LOOP) try { execSync("git fetch -q origin main && git checkout origin/main -- alerts.json", { stdio: "ignore" }); } catch (e) {} // dernières alertes écrites par Claude
+  if (!existsSync("alerts.json")) return;
+  let list; try { list = JSON.parse(readFileSync("alerts.json", "utf8")); } catch (e) { return; }
+  state.alerts ||= {};
+  for (const a of list) {
+    if (a.until && Date.now() > Date.parse(a.until)) continue;
+    const st = state.alerts[a.id] ||= {}; if (st.done) continue;
+    let px; try { const b = await yahoo(a.yahoo, "1m", "1d"); px = b.at(-1).close + (a.offset || 0); } catch (e) { continue; }
+    const d = a.lo < 10 ? 4 : 2, f = v => v.toFixed(d), sens = a.dir === 1 ? "ACHAT" : "VENTE";
+    const plan = `${sens} ${a.name} zone ${f(a.lo)}-${f(a.hi)} · stop ${f(a.stop)} · objectif ${f(a.target)} · 0,01 lot · attends la confirmation en 5 min`;
+    if ((a.cancelAbove && px >= a.cancelAbove) || (a.cancelBelow && px <= a.cancelBelow)) {
+      if (!st.inZone) { st.done = true; await send({ title: `❌ ${a.name} : plan annulé`, message: `Prix ${f(px)} : ${px >= (a.cancelAbove ?? Infinity) ? "au-dessus du stop prévu" : "la cible a été atteinte sans entrée"}. On ne prend pas ce trade.`, priority: 3, tags: ["x"] }); }
+      continue;
+    }
+    if (px >= a.lo && px <= a.hi) { if (!st.inZone) { st.inZone = true; await send({ title: `🎯 ${a.name} DANS LA ZONE (${f(px)})`, message: plan, priority: 5, tags: ["dart"] }); } continue; }
+    const dist = px < a.lo ? a.lo - px : px - a.hi;
+    if (dist <= a.near && !st.near) { st.near = true; await send({ title: `⏳ ${a.name} approche de la zone (${f(px)})`, message: `Prépare-toi : ${plan}`, priority: 4, tags: ["hourglass"] }); }
+  }
+}
+
 do {
+  try { await alerts(); } catch (e) { log("alertes : erreur", e?.message || e); }
   if (Date.now() - lastScan >= 5 * 60000) { lastScan = Date.now(); await scan(); }
   else { await follow(); markBe(); try { await manage({ acc, scores, cfg, markets: MARKETS }); } catch (e) {} saveAccount(acc); save(); }
   commit();
