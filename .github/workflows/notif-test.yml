@@ -1,0 +1,14 @@
+name: Notification de test
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Envoie une alerte de test sur ntfy
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" -H "Content-Type: application/json" -d "{\"topic\":\"$NTFY_TOPIC\",\"title\":\"🎯 TEST : alerte de zone\",\"message\":\"Ceci est un essai. Si tu vois ce message sur ton téléphone et sur ton PC, les alertes fonctionnent.\",\"priority\":5,\"tags\":[\"dart\"]}" https://ntfy.sh/
