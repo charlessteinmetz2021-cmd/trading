@@ -1308,9 +1308,9 @@ function onServerEvent(m) {
   }
   if (!/\[(accept|refuse|close|closeall):/.test(msg)) liveToast(title, msg.split("\n")[0]);
   // alertes de prix du serveur (🎯 zone, ⏳ approche, ❌ annulé) : notification du PC + son
-  if (/^(🎯|⏳|❌)/.test(title)) {
-    try { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: msg, tag: "alerte-" + title.slice(0, 20), requireInteraction: title.startsWith("🎯") }); } catch (e) {}
-    try { const ac = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.25, 0.5].forEach(d => { const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = title.startsWith("🎯") ? 988 : 660; g.gain.value = 0.15; o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.15); }); } catch (e) {}
+  if (/^(✅|🎯|⏳|⌛|❌)/.test(title)) {
+    try { if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body: msg, tag: "alerte-" + title.slice(0, 20), requireInteraction: title.startsWith("✅") }); } catch (e) {}
+    try { const ac = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.25, 0.5].forEach(d => { const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = title.startsWith("✅") ? 988 : 660; g.gain.value = 0.15; o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.15); }); } catch (e) {}
   }
   else liveToast("Ordre envoyé au serveur", msg.replace(/\s*\[[^\]]*\]\s*$/, ""));
   // le compte du serveur est republié environ une minute après chaque événement
