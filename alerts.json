@@ -1,19 +1,5 @@
 [
  {
-  "id": "usdchf-achat-1911",
-  "yahoo": "USDCHF=X",
-  "name": "USD/CHF",
-  "dir": 1,
-  "lo": 0.8412,
-  "hi": 0.8415,
-  "stop": 0.8404,
-  "target": 0.8442,
-  "near": 0.0005,
-  "cancelBelow": 0.8404,
-  "cancelAbove": 0.8442,
-  "until": "2026-11-19T21:30:00+01:00"
- },
- {
   "id": "eurusd-vente-1911",
   "yahoo": "EURUSD=X",
   "offset": -0.0004,
@@ -27,20 +13,6 @@
   "cancelAbove": 1.1026,
   "cancelBelow": 1.0955,
   "until": "2026-11-19T21:30:00+01:00"
- },
- {
-  "id": "btc-vente-1911b",
-  "yahoo": "BTC-USD",
-  "name": "Bitcoin",
-  "dir": -1,
-  "lo": 63050,
-  "hi": 63200,
-  "stop": 63350,
-  "target": 62050,
-  "near": 100,
-  "cancelAbove": 63350,
-  "cancelBelow": 62050,
-  "until": "2026-11-19T22:00:00+01:00"
  },
  {
   "id": "eurusd-vente2-1911",

@@ -346,7 +346,9 @@ async function alerts() {
         const ext = a.dir === 1 ? since.reduce((m, x) => x.low < m.low ? x : m) : since.reduce((m, x) => x.high > m.high ? x : m);
         const k = m1.indexOf(ext), before = m1.slice(Math.max(0, k - 10), k), after = m1.slice(k + 1);
         if (!before.length || !after.length) continue;
-        const lvl = a.dir === 1 ? Math.max(...before.map(x => x.high)) : Math.min(...before.map(x => x.low));
+        // niveau de cassure : dernier petit creux (vente) / petit sommet (achat) avant l'extrême ; sinon l'extrême des 10 bougies
+        const piv = []; for (let i = 1; i < before.length - 1; i++) { const p = before[i], q = before[i - 1], r = before[i + 1]; if (a.dir === 1 ? p.high > q.high && p.high >= r.high : p.low < q.low && p.low <= r.low) piv.push(a.dir === 1 ? p.high : p.low); }
+        const lvl = piv.length ? piv.at(-1) : a.dir === 1 ? Math.max(...before.map(x => x.high)) : Math.min(...before.map(x => x.low));
         const swept = a.dir === 1 ? ext.low > a.stop : ext.high < a.stop;
         const bos = after.find(x => a.dir === 1 ? x.close > lvl : x.close < lvl);
         const now = m1.at(-1).close, rr = (a.target - now) * a.dir / ((now - a.stop) * a.dir);
