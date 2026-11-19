@@ -62,11 +62,11 @@
    "closedAt": 1793831460000
   }
  ],
- "updated": 1795096298185,
+ "updated": 1795096916084,
  "dash": {
-  "t": 1795096318720,
+  "t": 1795096936590,
   "day": "2026-11-19",
-  "session": "jour",
+  "session": "ouverture US",
   "window": {
    "from": "08:00",
    "to": "22:00"
@@ -88,7 +88,7 @@
   "maxDayLoss": 207.55635296338352,
   "nightPnl": 0,
   "maxNightLoss": 207.55635296338352,
-  "gate": null,
+  "gate": "ouverture américaine : pas de nouveau trade",
   "proposalsToday": 1,
   "maxPerDay": 6,
   "warm": {
