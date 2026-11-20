@@ -1,4 +1,45 @@
 [
- {"id":"gbpusd-vente-2311","yahoo":"GBPUSD=X","name":"GBP/USD","dir":-1,"lo":1.3130,"hi":1.3138,"stop":1.3150,"target":1.3080,"near":0.0010,"cancelAbove":1.3150,"cancelBelow":1.3080,"until":"2026-11-23T21:00:00Z"},
- {"id":"eurusd-vente-2311","yahoo":"EURUSD=X","name":"EUR/USD","dir":-1,"lo":1.1002,"hi":1.1008,"stop":1.1014,"target":1.0956,"near":0.0008,"cancelAbove":1.1014,"cancelBelow":1.0956,"offset":-0.0004,"until":"2026-11-23T21:00:00Z"}
+ {
+  "id": "gbpusd-vente-2311",
+  "yahoo": "GBPUSD=X",
+  "name": "GBP/USD",
+  "dir": -1,
+  "lo": 1.313,
+  "hi": 1.3138,
+  "stop": 1.315,
+  "target": 1.308,
+  "near": 0.001,
+  "cancelAbove": 1.315,
+  "cancelBelow": 1.308,
+  "until": "2026-11-23T21:00:00Z"
+ },
+ {
+  "id": "eurusd-vente-2311",
+  "yahoo": "EURUSD=X",
+  "name": "EUR/USD",
+  "dir": -1,
+  "lo": 1.1002,
+  "hi": 1.1008,
+  "stop": 1.1014,
+  "target": 1.0956,
+  "near": 0.0008,
+  "cancelAbove": 1.1014,
+  "cancelBelow": 1.0956,
+  "offset": -0.0004,
+  "until": "2026-11-23T21:00:00Z"
+ },
+ {
+  "id": "btc-vente-2011",
+  "yahoo": "BTC-USD",
+  "name": "Bitcoin",
+  "dir": -1,
+  "lo": 59750,
+  "hi": 60000,
+  "stop": 60350,
+  "target": 58100,
+  "near": 200,
+  "cancelAbove": 60350,
+  "cancelBelow": 58100,
+  "until": "2026-11-22T22:00:00Z"
+ }
 ]
