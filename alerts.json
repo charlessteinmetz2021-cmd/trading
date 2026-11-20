@@ -41,5 +41,19 @@
   "cancelAbove": 60350,
   "cancelBelow": 58100,
   "until": "2026-11-22T22:00:00Z"
+ },
+ {
+  "id": "btc-vente-2011b",
+  "yahoo": "BTC-USD",
+  "name": "Bitcoin (zone proche)",
+  "dir": -1,
+  "lo": 59250,
+  "hi": 59320,
+  "stop": 59500,
+  "target": 58100,
+  "near": 120,
+  "cancelAbove": 59500,
+  "cancelBelow": 58100,
+  "until": "2026-11-21T08:00:00Z"
  }
 ]
