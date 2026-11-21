@@ -127,6 +127,19 @@ async function fetchCandles(feed, frame) {
   } catch (e) {}
   return null;
 }
+// écart avec MetaTrader 5 : Fany donne une fois le prix affiché sur son MT5, l'appli décale tout le flux (prix, bougies) de cet écart
+let OFFS = {}; try { OFFS = JSON.parse(localStorage.getItem("mt5-offset") || "{}") || {}; } catch (e) {}
+const off = k => OFFS[k] || 0;
+const shiftBar = (b, k) => off(k) ? { ...b, open: b.open + off(k), high: b.high + off(k), low: b.low + off(k), close: b.close + off(k) } : b;
+function calibrateMT5() {
+  const raw = price[cur]; if (raw == null) return say("Attends que le prix s'affiche, puis recommence.");
+  const v = parseFloat(String(prompt(`Prix ${MARKETS[cur].name} affiché en ce moment sur ton MetaTrader 5 (prix Bid / vente) :`, fmt(raw, MARKETS[cur].dec)) || "").replace(",", "."));
+  if (!(v > 0)) return;
+  OFFS[cur] = +(v - (raw - off(cur))).toFixed(MARKETS[cur].dec);
+  if (Math.abs(OFFS[cur]) > raw * 0.02) { delete OFFS[cur]; return say("Écart de plus de 2 % : vérifie que c'est bien le même marché."); }
+  try { localStorage.setItem("mt5-offset", JSON.stringify(OFFS)); } catch (e) {}
+  price[cur] = v; loadCandles(); pipNote(); say(`Prix calés sur ton MT5 (écart ${OFFS[cur] >= 0 ? "+" : ""}${OFFS[cur]}).`);
+}
 let dataSrc = null;
 async function loadCandles() {
   if (klineWs) { klineWs.onclose = null; klineWs.close(); klineWs = null; }
@@ -138,6 +151,7 @@ async function loadCandles() {
   setPrecision();
   const sym = cur, frame = tf;
   const res = await fetchCandles(m.feed, tf);
+  if (res && res.rows) res.rows = res.rows.map(b => shiftBar(b, sym));
   if (sym !== cur || frame !== tf) return;
   if (res && !res.rows.length && SEC[tf]) { dataSrc = res.src; candleData = []; $("indStatus").textContent = "Bougies en secondes construites avec les prix en direct : elles apparaissent au fur et à mesure."; renderIndicators(); return; }
   if (!res) { dataSrc = null; $("indStatus").textContent = "Les prix ne se chargent pas sur ta connexion (Binance et Coinbase injoignables). Les indicateurs restent disponibles sur la vue TradingView."; renderIndicators(); return; }
@@ -148,6 +162,7 @@ async function loadCandles() {
   renderDrawings(); renderPosLines(); renderIndicators();
   const onBar = bar => {
     if (sym !== cur || frame !== tf) return;
+    bar = shiftBar(bar, sym);
     const last = candleData[candleData.length - 1];
     if (last && last.time === bar.time) candleData[candleData.length - 1] = bar; else if (!last || bar.time > last.time) candleData.push(bar);
     candles.update(bar); refreshIndicatorsSoon();
@@ -629,7 +644,7 @@ let prevShown = {};
 let lastRender = 0;
 let lastTick = 0;
 function onPrice(k, p) {
-  price[k] = p; if (k === cur) lastTick = Date.now(); check(k);
+  p += off(k); price[k] = p; if (k === cur) lastTick = Date.now(); check(k);
   if (MARKETS[k].feed) liveCandle(k, p);
   const now = Date.now();
   if (now - lastRender > 250) {
@@ -689,7 +704,7 @@ function place(dir) {
     const above = entry > px, kind = (dir === 1) === above ? "stop" : "limite";
     S.orders.push({ id: S.nextId++, sym: cur, dir, qty, limit: entry, above, kind, lev, sl, tp }); save(); renderAll(); renderPosLines();
     const pips = Math.round(Math.abs(entry - px) / (PIPV[cur] || 1));
-    say(`Ordre en attente : ${dir === 1 ? "achat" : "vente"} ${kind} à ${fmt(entry, m.dec)}, soit ${pips} pips ${above ? "au-dessus" : "en dessous"} du prix. Il s'ouvrira tout seul quand le prix y arrivera.`);
+    say(`Ordre en attente : ${dir === 1 ? "achat" : "vente"} ${kind} à ${fmt(entry, m.dec)}, soit ${pips} pips (${ptsTxt(cur, entry - px)}) ${above ? "au-dessus" : "en dessous"} du prix. Il s'ouvrira tout seul quand le prix y arrivera.`);
   }
   else { openPos(cur, dir, qty, px, lev, sl, tp); say(`${dir === 1 ? "Achat" : "Vente"} de ${qty} ${m.name} à ${fmt(px, m.dec)} exécuté.`); }
   if (tvMode && m.feed) { tvMode = false; drawTv(); chart.timeScale().scrollToRealTime(); renderIndicators(); renderPosLines(); say($("msg").textContent + " Ton trade s'affiche sur le graphique « mes trades » : TradingView ne permet pas d'y ajouter nos positions."); }
@@ -698,7 +713,11 @@ function place(dir) {
 
 // ---------- pips : 1 pip = 10 $ sur le Bitcoin, 0,10 $ sur l'or, 0,0001 sur l'euro/dollar ----------
 const PIPV = { BTC: 10, XAU: 0.1, EUR: 0.0001 };
-function pipNote() { const el = $("pipNote"); if (el) el.textContent = `1 pip = ${{ BTC: "10 $", XAU: "0,10 $", EUR: "0,0001" }[cur]} sur ${MARKETS[cur].name}. Les pips sont comptés depuis le prix d'entrée, dans le bon sens selon Acheter ou Vendre.`; }
+// MT5 compte en « points » = plus petit écart de prix (Admirals : BTCUSD et XAUUSD 2 décimales, EURUSD 5 décimales)
+const TICK = { BTC: 0.01, XAU: 0.01, EUR: 0.00001 };
+const mt5pts = (sym, diff) => Math.round(Math.abs(diff) / (TICK[sym] || 1));
+const ptsTxt = (sym, diff) => `${mt5pts(sym, diff).toLocaleString("fr-FR")} points MT5`;
+function pipNote() { const el = $("pipNote"); if (el) el.textContent = `1 pip = ${{ BTC: "10 $", XAU: "0,10 $", EUR: "0,0001" }[cur]} sur ${MARKETS[cur].name}, soit ${mt5pts(cur, PIPV[cur]).toLocaleString("fr-FR")} points sur MetaTrader 5 (MT5 compte en points, pas en pips). ${off(cur) ? `Prix calés sur ton MT5 (écart ${off(cur) >= 0 ? "+" : ""}${off(cur)}).` : "Prix pas encore calés sur ton MT5 : clique sur « Caler les prix sur mon MT5 »."} Les pips sont comptés depuis le prix d'entrée, dans le bon sens selon Acheter ou Vendre.`; }
 // les champs en pips remplissent les prix au moment de l'ordre (le sens dépend du bouton)
 function applyPips(dir, entry) {
   const pv = PIPV[cur] || 1, d = MARKETS[cur].dec, sp = +$("slPips").value, tpp = +$("tpPips").value;
@@ -759,7 +778,7 @@ function renderAll() {
   }).join("") : '<tr><td colspan="9" class="empty">Aucune position. Choisis un marché, puis clique sur Acheter ou Vendre.</td></tr>';
   $("ordBody").innerHTML = S.orders.length ? S.orders.map(o => {
     const m = MARKETS[o.sym];
-    return `<tr><td>${m.name}</td><td>${side(o.dir)} ${o.kind || "limite"}</td><td>${o.qty}</td><td>${fmt(o.limit, m.dec)}${price[o.sym] != null ? ` <span class="small">(${Math.round(Math.abs(o.limit - price[o.sym]) / (PIPV[o.sym] || 1))} pips)</span>` : ""}</td><td>${o.sl ? fmt(o.sl, m.dec) : "–"}</td><td>${o.tp ? fmt(o.tp, m.dec) : "–"}</td><td><button data-cancel="${o.id}">Annuler</button></td></tr>`;
+    return `<tr><td>${m.name}</td><td>${side(o.dir)} ${o.kind || "limite"}</td><td>${o.qty}</td><td>${fmt(o.limit, m.dec)}${price[o.sym] != null ? ` <span class="small">(${Math.round(Math.abs(o.limit - price[o.sym]) / (PIPV[o.sym] || 1))} pips · ${ptsTxt(o.sym, o.limit - price[o.sym])})</span>` : ""}</td><td>${o.sl ? fmt(o.sl, m.dec) : "–"}</td><td>${o.tp ? fmt(o.tp, m.dec) : "–"}</td><td><button data-cancel="${o.id}">Annuler</button></td></tr>`;
   }).join("") : '<tr><td colspan="7" class="empty">Aucun ordre en attente.</td></tr>';
 
   const H = S.history, wins = H.filter(h => h.pnl > 0), losses = H.filter(h => h.pnl <= 0);
@@ -1217,7 +1236,7 @@ function renderServer() {
     return `<div class="prop scard" style="border-left:4px solid ${v >= 0 ? "var(--gain)" : "var(--loss)"}">
       <div><b>${p.isAdd ? "Renfort · " : ""}${p.dir === 1 ? "Achat" : "Vente"} ${names[p.sym] || p.sym}</b>${/-N\d/.test(p.prop || p.id) ? " 🌙" : ""}${p.locked != null ? ` <span class="pill" style="color:var(--gain)">🔒 ${p.locked > 0.1 ? "gain protégé" : "SL au point d'entrée"}</span>` : ""}
       <div class="small">Entrée ${fmt(p.entry)} · <span class="loss">SL ${fmt(p.stop)}</span> · <span class="gain">TP ${fmt(p.target)}</span> · prix ${fmt(now)}</div></div>
-      <div class="sres"><b class="${v >= 0 ? "gain" : "loss"}">${v >= 0 ? "+" : ""}${fmt(v)} $</b><span class="small">${pips >= 0 ? "+" : ""}${Math.round(pips)} pips</span></div>
+      <div class="sres"><b class="${v >= 0 ? "gain" : "loss"}">${v >= 0 ? "+" : ""}${fmt(v)} $</b><span class="small">${pips >= 0 ? "+" : ""}${Math.round(pips)} pips · ${ptsTxt(p.sym, now - p.entry)}</span></div>
       ${topic() ? `<button class="sclose" data-srvclose="${p.id}" ${closing.has(p.id) ? "disabled" : ""}>${closing.has(p.id) ? "Fermeture…" : "Clôturer"}</button>` : ""}
     </div>`;
   }).join("") || '<p class="small">Aucun trade ouvert sur le serveur.</p>';
@@ -1407,6 +1426,7 @@ function setupTopic() {
   $("ntfySave").onclick = () => { try { const v = inp.value.trim().replace(/^https?:\/\/ntfy\.sh\//, ""); v ? localStorage.setItem(TOPIC_KEY, v) : localStorage.removeItem(TOPIC_KEY); } catch (e) {} show(); renderServer(); connectLive(); };
 }
 setupTopic(); pipNote(); renderHistory();
+$("mt5Cal")?.addEventListener("click", calibrateMT5);
 // ---------- compte d'entraînement de Claude (ordres passés par Claude, suivis par GitHub Actions) ----------
 let CLA = null;
 async function pullClaude() {
