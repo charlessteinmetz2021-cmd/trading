@@ -27,33 +27,5 @@
   "cancelBelow": 1.0956,
   "offset": -0.0004,
   "until": "2026-11-23T21:00:00Z"
- },
- {
-  "id": "btc-vente-2011",
-  "yahoo": "BTC-USD",
-  "name": "Bitcoin",
-  "dir": -1,
-  "lo": 59750,
-  "hi": 60000,
-  "stop": 60350,
-  "target": 58100,
-  "near": 200,
-  "cancelAbove": 60350,
-  "cancelBelow": 58100,
-  "until": "2026-11-22T22:00:00Z"
- },
- {
-  "id": "btc-vente-2011b",
-  "yahoo": "BTC-USD",
-  "name": "Bitcoin (zone proche)",
-  "dir": -1,
-  "lo": 59250,
-  "hi": 59320,
-  "stop": 59500,
-  "target": 58100,
-  "near": 120,
-  "cancelAbove": 59500,
-  "cancelBelow": 58100,
-  "until": "2026-11-21T08:00:00Z"
  }
 ]
