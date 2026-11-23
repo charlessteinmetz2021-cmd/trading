@@ -83,11 +83,11 @@
    "closedAt": 1793831460000
   }
  ],
- "updated": 1795416579882,
+ "updated": 1795417198942,
  "dash": {
-  "t": 1795416600732,
+  "t": 1795417219828,
   "day": "2026-11-23",
-  "session": "hors heures",
+  "session": "jour",
   "window": {
    "from": "08:00",
    "to": "22:00"
@@ -109,7 +109,7 @@
   "maxDayLoss": 205.48078943374966,
   "nightPnl": -103.77817648169177,
   "maxNightLoss": 207.55635296338352,
-  "gate": "en dehors de tes heures (08:00-22:00)",
+  "gate": null,
   "proposalsToday": 0,
   "maxPerDay": 6,
   "warm": {
