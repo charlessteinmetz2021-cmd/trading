@@ -14,10 +14,10 @@
    "R": 394.3600000000006,
    "lev": 10,
    "openedAt": 1795395660000,
-   "checkedTo": 1795399200,
-   "lastPnlNotif": 1795397513483,
-   "last": 60846,
-   "pnl": -84.71516019116032,
+   "checkedTo": 1795399320,
+   "lastPnlNotif": 1795399320035,
+   "last": 60888,
+   "pnl": -73.6626107129398,
    "beAt": 0.7
   }
  ],
@@ -81,11 +81,11 @@
    "closedAt": 1793831460000
   }
  ],
- "updated": 1795399233782,
+ "updated": 1795399320035,
  "dash": {
-  "t": 1795399021921,
+  "t": 1795399341537,
   "day": "2026-11-23",
-  "session": "nuit",
+  "session": "hors heures",
   "window": {
    "from": "08:00",
    "to": "22:00"
@@ -107,7 +107,7 @@
   "maxDayLoss": 207.55635296338352,
   "nightPnl": 0,
   "maxNightLoss": 207.55635296338352,
-  "gate": null,
+  "gate": "en dehors de tes heures (08:00-22:00)",
   "proposalsToday": 0,
   "maxPerDay": 6,
   "warm": {
