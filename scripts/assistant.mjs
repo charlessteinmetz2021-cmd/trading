@@ -29,7 +29,7 @@ async function yahoo(sym, interval, range) {
   throw new Error("Yahoo indisponible");
 }
 async function fetchCandles(m, tf) {
-  if (m.yahoo) return yahoo(m.yahoo, tf === "4h" ? "1h" : tf, { "5m": "5d", "15m": "5d", "1h": "1mo", "4h": "3mo" }[tf]);
+  if (m.yahoo) return yahoo(m.yahoo, tf === "4h" ? "1h" : tf, { "5m": "5d", "15m": "5d", "1h": "1mo", "4h": "3mo", "1d": "1y" }[tf]);
   for (const host of ["https://data-api.binance.vision", "https://api.binance.com"]) {
     try {
       const r = await fetch(`${host}/api/v3/klines?symbol=${m.binance}&interval=${tf}&limit=500`);
@@ -44,6 +44,43 @@ async function fetchCandles(m, tf) {
 }
 
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+
+// Vérification « formation » (InstitutionalFx) avant toute proposition : refait les contrôles sur 15 min, 1 h, 4 h et daily.
+// 1) pas de creux/sommets égaux (liquidité) entre l'entrée et un peu au-delà du stop : le prix irait les chercher et toucherait le stop ;
+// 2) pas d'entrée dans une imbalance de grande UT (4 h, daily) dans le sens contraire ;
+// 3) pas de zone contraire 4 h / daily entre l'entrée et l'objectif (sinon objectif ramené devant, et ratio revérifié).
+const swingPts = (b, k) => { const o = []; for (let i = k; i < b.length - k; i++) { const w = b.slice(i - k, i + k + 1); if (b[i].high === Math.max(...w.map(x => x.high))) o.push({ t: "H", p: b[i].high }); if (b[i].low === Math.min(...w.map(x => x.low))) o.push({ t: "L", p: b[i].low }); } return o; };
+const eqLevels = (b, k, type) => { const atr = I.atr(b).at(-1), tol = atr * 0.15, pts = swingPts(b, k).filter(x => x.t === type).slice(-12), r = []; for (let a = 0; a < pts.length; a++) for (let c = a + 1; c < pts.length; c++) if (Math.abs(pts[a].p - pts[c].p) <= tol) r.push((pts[a].p + pts[c].p) / 2); return r; };
+const openFvg = (b, look = 150) => { const n = b.length - 1, r = []; for (let i = n; i > Math.max(2, n - look); i--) { if (b[i].low > b[i - 2].high) { const lo = b[i - 2].high, hi = b[i].low; if (!b.slice(i + 1).some(x => x.low <= lo)) r.push({ dir: 1, lo, hi }); } if (b[i].high < b[i - 2].low) { const lo = b[i].high, hi = b[i - 2].low; if (!b.slice(i + 1).some(x => x.high >= hi)) r.push({ dir: -1, lo, hi }); } } return r; };
+const to4h = b => { const o = []; for (const x of b) { const t = x.time - (x.time % 14400), l = o[o.length - 1]; if (l && l.time === t) { l.high = Math.max(l.high, x.high); l.low = Math.min(l.low, x.low); l.close = x.close; } else o.push({ ...x, time: t }); } return o; };
+async function formationCheck(m, p, b15) {
+  const notes = [];
+  const h1 = (await fetchCandles(m, "1h")).slice(0, -1), h4 = to4h(h1), d1 = (await fetchCandles(m, "1d")).slice(0, -1);
+  const atr1h = I.atr(h1).at(-1), dir = p.dir, risk = Math.abs(p.entry - p.stop);
+  // 1) liquidité derrière / sous le stop
+  for (const [b, k, lab] of [[b15, 3, "15 min"], [h1, 3, "1 h"]]) {
+    const lv = eqLevels(b, k, dir === 1 ? "L" : "H");
+    const bad = lv.find(L => dir === 1 ? L < p.entry && L > p.stop - atr1h : L > p.entry && L < p.stop + atr1h);
+    if (bad != null) return { ok: false, why: `${dir === 1 ? "creux" : "sommets"} égaux à ${bad.toFixed(m.dec ?? 2)} (${lab}) trop près du stop : le prix irait les chercher` };
+  }
+  notes.push("pas de liquidité égale près du stop");
+  // 2) entrée dans une imbalance contraire de grande UT
+  for (const [b, lab] of [[h4, "4 h"], [d1, "daily"]]) {
+    const z = openFvg(b).find(f => f.dir === -dir && p.entry >= f.lo && p.entry <= f.hi);
+    if (z) return { ok: false, why: `entrée dans une imbalance ${dir === 1 ? "baissière" : "haussière"} ${lab} (${z.lo.toFixed(m.dec ?? 2)}-${z.hi.toFixed(m.dec ?? 2)}) : zone de ${dir === 1 ? "vente" : "achat"} en grande UT` };
+  }
+  notes.push("entrée hors zone contraire 4 h / daily");
+  // 3) zone contraire entre l'entrée et l'objectif
+  let target = p.target;
+  for (const [b, lab] of [[h4, "4 h"], [d1, "daily"]]) {
+    for (const f of openFvg(b).filter(f => f.dir === -dir)) {
+      const edge = dir === 1 ? f.lo : f.hi;
+      if ((edge - p.entry) * dir > 0 && (target - edge) * dir > 0) { target = edge - dir * 0.1 * atr1h; notes.push(`objectif ramené devant l'imbalance ${lab} ${f.lo.toFixed(m.dec ?? 2)}-${f.hi.toFixed(m.dec ?? 2)}`); }
+    }
+  }
+  if (Math.abs(target - p.entry) < 1.5 * risk) return { ok: false, why: `zone contraire avant l'objectif : il ne reste que ${(Math.abs(target - p.entry) / risk).toFixed(1)} R` };
+  return { ok: true, target, notes };
+}
 
 // Calendrier économique gratuit (annonces à fort impact de la semaine)
 async function calendar() {
@@ -285,6 +322,12 @@ for (const sym of cfg.markets) {
     const tpPips = Math.abs(p.target - p.entry) / PIP[sym], slPips = Math.abs(p.stop - p.entry) / PIP[sym];
     if (tpPips > left) { p.target = p.entry + p.dir * left * PIP[sym]; log(sym, `objectif ramené à ${Math.round(left)} pips`); }
     if (Math.abs(p.target - p.entry) / PIP[sym] < 1.5 * slPips) { log(sym, `ignoré : ${Math.round(Math.min(tpPips, left))} pips à gagner pour ${Math.round(slPips)} pips de risque, pas assez`); continue; }
+    // revérification complète selon la formation (structure multi-UT, liquidité, imbalances), deux fois : avec le prix du signal puis avec le prix du moment
+    let fc; try { fc = await formationCheck(m, p, b); } catch (e) { log(sym, "vérification formation : erreur", e?.message || e); continue; }
+    if (!fc.ok) { log(sym, "écarté par la vérification formation :", fc.why); continue; }
+    p.target = fc.target;
+    try { const nowPx = (await fetchCandles(m, "5m")).at(-1).close, moved = Math.abs(nowPx - p.entry) / Math.abs(p.entry - p.stop); if (moved > 0.3) { log(sym, `écarté : le prix a déjà bougé de ${moved.toFixed(1)} R depuis le signal`); continue; } const fc2 = await formationCheck(m, { ...p, entry: nowPx }, b); if (!fc2.ok) { log(sym, "écarté à la 2e vérification :", fc2.why); continue; } } catch (e) {}
+    p.reason = `${p.reason}\nVérifié 2 fois selon la formation : ${fc.notes.join(", ")}.`;
     p.lot = lotAdvice(p, W);
     p.reason = `${W.inWarm ? `Trade ${W.n + 1}/${W.trades} de démarrage (sélection renforcée). ` : ""}${p.reason}\n${p.lot}`;
     if (night) { p.id = `${sym}-N${Date.now()}`; p.reason = `🌙 Séance de nuit (hors objectif de ${(cfg.goalPips || {}).max || 150} pips). ${p.reason}`; state.nightCount = (state.nightDay === state.day ? state.nightCount || 0 : 0) + 1; state.nightDay = state.day; }
