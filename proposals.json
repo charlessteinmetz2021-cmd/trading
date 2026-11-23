@@ -51,7 +51,8 @@
   "confidence": null,
   "t": 1795395652913,
   "source": "github",
-  "lot": "Lot conseillé : 0.01 (le minimum). Risque ≈ 5.78 €, soit 6 % de ton capital : c'est plus que conseillé, ne monte surtout pas au-dessus."
+  "lot": "Lot conseillé : 0.01 (le minimum). Risque ≈ 5.78 €, soit 6 % de ton capital : c'est plus que conseillé, ne monte surtout pas au-dessus.",
+  "status": "accepted"
  },
  {
   "id": "BTC-1795344511387",
