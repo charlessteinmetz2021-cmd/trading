@@ -1,5 +1,10 @@
 name: Backtest des signaux
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: script à lancer
+        default: backtest.mjs
 permissions:
   contents: read
 jobs:
@@ -11,4 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/backtest.mjs
+      - run: node "scripts/$SCRIPT"
+        env:
+          SCRIPT: ${{ inputs.script || 'backtest.mjs' }}
