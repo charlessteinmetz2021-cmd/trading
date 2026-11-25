@@ -1,5 +1,59 @@
 [
  {
+  "id": "EUR-1795633588409",
+  "sym": "EUR",
+  "tf": "15m",
+  "dir": 1,
+  "entry": 1.098659634590149,
+  "stop": 1.0977294494247944,
+  "target": 1.1014501900862124,
+  "score": 11,
+  "details": [
+   {
+    "name": "Tendance (MM 50/200)",
+    "v": 1
+   },
+   {
+    "name": "EMA 9/21",
+    "v": 1
+   },
+   {
+    "name": "Ichimoku",
+    "v": 2
+   },
+   {
+    "name": "MACD",
+    "v": 1
+   },
+   {
+    "name": "RSI",
+    "v": 1
+   },
+   {
+    "name": "Supertrend",
+    "v": 1
+   },
+   {
+    "name": "Parabolic SAR",
+    "v": 1
+   },
+   {
+    "name": "VWAP",
+    "v": 1
+   },
+   {
+    "name": "Structure",
+    "v": 2
+   }
+  ],
+  "news": "Aucune annonce importante dans les 24 h.",
+  "reason": "Trade 2/10 de démarrage (sélection renforcée). 9 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, RSI, Supertrend, Parabolic SAR, VWAP, Structure.\nVérifié 2 fois selon la formation : pas de liquidité égale près du stop, entrée hors zone contraire 4 h / daily.\nLot conseillé : 1064.30 (risque ≈ 0.99 €, 1 % de ton capital ≈ 99 €).",
+  "confidence": null,
+  "t": 1795633588409,
+  "source": "github",
+  "lot": "Lot conseillé : 1064.30 (risque ≈ 0.99 €, 1 % de ton capital ≈ 99 €)."
+ },
+ {
   "id": "BTC-1795593665826",
   "sym": "BTC",
   "tf": "15m",
@@ -2664,59 +2718,6 @@
   "reason": "8 méthodes sur 10 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Structure.",
   "confidence": null,
   "t": 1794706365911,
-  "source": "github"
- },
- {
-  "id": "BTC-1794705456005",
-  "sym": "BTC",
-  "tf": "15m",
-  "dir": -1,
-  "entry": 62888.58,
-  "stop": 63740.19872439366,
-  "target": 61185.342551212685,
-  "score": -10,
-  "details": [
-   {
-    "name": "Tendance (MM 50/200)",
-    "v": -1
-   },
-   {
-    "name": "EMA 9/21",
-    "v": -1
-   },
-   {
-    "name": "Ichimoku",
-    "v": -2
-   },
-   {
-    "name": "MACD",
-    "v": -2
-   },
-   {
-    "name": "RSI",
-    "v": 1
-   },
-   {
-    "name": "Supertrend",
-    "v": -1
-   },
-   {
-    "name": "Parabolic SAR",
-    "v": -1
-   },
-   {
-    "name": "VWAP",
-    "v": -1
-   },
-   {
-    "name": "Structure",
-    "v": -2
-   }
-  ],
-  "news": "Aucune annonce importante dans les 24 h.",
-  "reason": "8 méthodes sur 9 vont dans le même sens : Tendance (MM 50/200), EMA 9/21, Ichimoku, MACD, Supertrend, Parabolic SAR, VWAP, Structure.",
-  "confidence": null,
-  "t": 1794705456005,
   "source": "github"
  }
 ]
