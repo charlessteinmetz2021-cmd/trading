@@ -83,9 +83,9 @@
    "closedAt": 1793831460000
   }
  ],
- "updated": 1795593644650,
+ "updated": 1795594265933,
  "dash": {
-  "t": 1795593665192,
+  "t": 1795594286426,
   "day": "2026-11-25",
   "session": "jour",
   "window": {
@@ -110,7 +110,7 @@
   "nightPnl": 0,
   "maxNightLoss": 205.48078943374966,
   "gate": null,
-  "proposalsToday": 0,
+  "proposalsToday": 1,
   "maxPerDay": 6,
   "warm": {
    "trades": 10,
